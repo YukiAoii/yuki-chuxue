@@ -277,7 +277,7 @@ FREE_GROUP_API_KEY=sk-...
 
 | 项目 | 仓库 | 许可证 | 借鉴内容 |
 |---|---|---|---|
-| Tianshu Harness | https://github.com/huiliyi37/Tianshu | Apache-2.0 | 上下文压缩触发线公式、prefixCacheStrategy 三态、模型预算分档 |
+| Tianshu Harness | https://github.com/huiliyi37/Tianshu-harness | Apache-2.0 | 上下文压缩触发线公式、prefixCacheStrategy 三态、模型预算分档 |
 | DeepSeek Harness | https://github.com/deepseek-ai/deepseek-harness | MIT | compaction 区域划分与 token 计量口径 |
 | Operit | https://github.com/AAswordman/Operit | LGPL-3.0 | 记忆库界面组织与抽取流程设计 |
 | Ombre Brain | https://github.com/P0luz/Ombre-Brain | MIT | 记忆库（本仓库 `ombre-brain/` 基于它修改） |
