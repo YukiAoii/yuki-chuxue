@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>初雪 · 认证界面视觉原型 v2（品牌=软件图标）</title>
+<style>
+  :root{
+    --bg-top:#F5F7FA; --bg-bottom:#E9F0FB;
+    --ink:#171717; --ink-sub:#8A9099; --ink-faint:#B4BAC3;
+    --line:#E6EAF0; --field:#FFFFFF;
+    --brand:#2F6BFF;
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:#DDE3EC;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:26px}
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .cap{font:600 12px/1.6 ui-monospace,Menlo,monospace;color:#5A6472;margin:0 0 8px 2px}
+  .phone{width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;
+         background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-bottom) 100%);
+         box-shadow:0 18px 50px rgba(30,45,70,.22), 0 0 0 1px rgba(255,255,255,.6) inset}
+  .bokeh{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .bokeh i{position:absolute;border-radius:50%;display:block}
+  .b1{width:260px;height:260px;left:-70px;top:-40px;background:radial-gradient(circle,rgba(120,170,235,.30),rgba(120,170,235,0) 70%)}
+  .b2{width:200px;height:200px;right:-60px;top:120px;background:radial-gradient(circle,rgba(160,200,255,.32),rgba(160,200,255,0) 70%)}
+  .b3{width:150px;height:150px;left:40px;bottom:150px;background:radial-gradient(circle,rgba(190,215,250,.34),rgba(190,215,250,0) 70%)}
+  .b4{width:300px;height:300px;right:-90px;bottom:-90px;background:radial-gradient(circle,rgba(130,180,240,.26),rgba(130,180,240,0) 70%)}
+  .body{position:relative;height:100%;display:flex;flex-direction:column;padding:0 26px}
+
+  /* 品牌：软件图标（真图），做成 squircle —— 与系统里看到的那颗图标同形 */
+  .icon{border-radius:26px;object-fit:cover;display:block;
+        box-shadow:0 14px 30px rgba(64,90,137,.28), 0 0 0 1px rgba(255,255,255,.7) inset}
+  .icon.lg{width:96px;height:96px}
+  .icon.sm{width:68px;height:68px;border-radius:19px}
+  .icon.xs{width:52px;height:52px;border-radius:15px}
+
+  .x{position:absolute;right:18px;top:18px;width:36px;height:36px;border-radius:50%;
+     display:grid;place-items:center;color:#8F97A2;font-size:18px;line-height:1;
+     background:rgba(255,255,255,.72);box-shadow:0 2px 10px rgba(40,60,90,.08)}
+
+  h1{margin:0;font-size:27px;font-weight:750;letter-spacing:-.4px;color:var(--ink)}
+  h1.sm{font-size:23px}
+  .sub{margin:9px 0 0;font-size:13.5px;line-height:1.7;color:var(--ink-sub)}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:52px;
+       border:0;font-size:15.5px;font-weight:650;color:#fff;background:var(--ink);
+       box-shadow:0 10px 24px rgba(23,23,23,.20)}
+  .btn.cap{border-radius:26px}
+  .btn.r16{border-radius:16px}
+  .btn2{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:52px;
+        font-size:15.5px;font-weight:600;color:#2C3138;background:rgba(255,255,255,.9);
+        border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 14px rgba(40,60,90,.05)}
+  .link{margin-top:16px;text-align:center;font-size:13.5px;color:var(--ink-sub)}
+  .link b{color:var(--ink);font-weight:650}
+
+  .fields{display:flex;flex-direction:column;gap:12px}
+  .fld{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+       box-shadow:0 2px 8px rgba(40,60,90,.04)}
+  .fld .lab{font-size:11.5px;color:var(--ink-faint)}
+  .fld .val{margin-top:3px;font-size:15px;color:var(--ink)}
+  .fld .val.ph{color:#C3C9D2}
+  .uid{display:flex;align-items:center;justify-content:space-between;
+       background:rgba(91,155,213,.10);border:1px solid rgba(91,155,213,.22);border-radius:14px;padding:13px 15px}
+  .uid .num{font-size:22px;font-weight:750;color:#1F4E79;letter-spacing:.5px}
+  .uid .hint{font-size:11.5px;color:#4E8FD0;font-weight:600}
+  .hint{font-size:11.5px;line-height:1.55;color:var(--ink-faint)}
+  .spacer{flex:1}
+  .top{height:58px}
+  .grp{font-size:11.5px;font-weight:650;color:#7A828D;letter-spacing:.06em;margin:20px 2px 9px}
+  .card{background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.9);border-radius:22px;
+        padding:18px 16px;box-shadow:0 10px 30px rgba(40,60,90,.07)}
+</style>
+</head>
+<body>
+<div class="row">
+
+  <!-- ① 首次打开 · 选择页 -->
+  <div>
+    <p class="cap">① 首次打开 · 选择页（最终稿）</p>
+    <div class="phone">
+      <div class="bokeh"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+      <div class="x">✕</div>
+      <div class="body">
+        <div class="spacer"></div>
+        <img class="icon lg" src="logo.png" alt="初雪">
+        <h1 style="margin-top:24px">欢迎使用初雪</h1>
+        <p class="sub">登录后，换设备也能带回头像和对话。<br>不登录也能用，数据都在这台手机上。</p>
+        <div style="height:30px"></div>
+        <button class="btn r16">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.2-3.9 4-5.8 7.5-5.8S18.3 16.1 19.5 20"/></svg>
+          登录
+        </button>
+        <div style="height:11px"></div>
+        <button class="btn2">注册新账号</button>
+        <div class="spacer"></div>
+        <div class="hint" style="text-align:center;padding-bottom:24px">之后可以在「我的」里登录</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 首次打开 · 选择页（小圆角变体，用来对比） -->
+  <div>
+    <p class="cap">② 「我的」未登录态 —— 按需登录的入口</p>
+    <div class="phone">
+      <div class="bokeh"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+      <div class="body">
+        <div class="top"></div>
+        <!-- 渐变头卡：与现有 ProfileTab 同构，只把「未登录」胶囊做成可点 -->
+        <div style="border-radius:22px;padding:22px 20px;background:linear-gradient(135deg,#2F6BFF,#1B4FD8);box-shadow:0 14px 30px rgba(43,107,255,.26)">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.24);display:grid;place-items:center;color:#fff;font-size:19px;font-weight:700">我</div>
+            <div>
+              <div style="color:#fff;font-size:19px;font-weight:700">我</div>
+              <div style="margin-top:9px">
+                <span style="background:rgba(255,255,255,.26);color:#fff;font-size:11.5px;font-weight:650;padding:5px 12px;border-radius:999px">未登录，去登录</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grp">我攒了多少</div>
+        <div class="card" style="display:flex;gap:10px">
+          <div style="flex:1"><div class="hint">对话</div><div style="font-size:22px;font-weight:750;color:var(--ink);margin-top:4px">128</div></div>
+          <div style="flex:1"><div class="hint">记忆</div><div style="font-size:22px;font-weight:750;color:var(--ink);margin-top:4px">36</div></div>
+          <div style="flex:1"><div class="hint">人设</div><div style="font-size:22px;font-weight:750;color:var(--ink);margin-top:4px">4</div></div>
+        </div>
+        <div class="grp">设置</div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;padding:10px 2px"><span style="font-size:14.5px;color:var(--ink)">数据备份</span><span class="hint" style="align-self:center">›</span></div>
+          <div style="border-top:1px solid var(--line);display:flex;justify-content:space-between;padding:10px 2px"><span style="font-size:14.5px;color:var(--ink)">全局看板</span><span class="hint" style="align-self:center">›</span></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="hint" style="text-align:center;padding-bottom:22px">未登录不影响使用：对话、人设、记忆都在本机</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="cap">③ 登录</p>
+    <div class="phone">
+      <div class="bokeh"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+      <div class="body">
+        <div class="top"></div>
+        <img class="icon sm" src="logo.png" alt="初雪">
+        <h1 style="margin-top:20px">欢迎回来</h1>
+        <p class="sub">登录以使用完整功能</p>
+        <div style="height:24px"></div>
+        <div class="fields">
+          <div class="fld"><div class="lab">UID 或昵称</div><div class="val ph">10001 或你的昵称</div></div>
+          <div class="fld"><div class="lab">密码</div><div class="val">••••••••</div></div>
+        </div>
+        <div style="height:22px"></div>
+        <button class="btn r16">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4"/><path d="M8.4 10.5V8a3.6 3.6 0 017.2 0v2.5"/></svg>
+          进入初雪
+        </button>
+        <div class="link">没有账号？<b>注册</b> · 忘记密码</div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 注册第一屏 -->
+  <div>
+    <p class="cap">④ 注册 · 第一屏</p>
+    <div class="phone">
+      <div class="bokeh"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+      <div class="body">
+        <div class="top"></div>
+        <img class="icon xs" src="logo.png" alt="初雪">
+        <h1 class="sm" style="margin-top:18px">创建账号</h1>
+        <p class="sub">第 1 步，共 2 步 · 先验证邮箱</p>
+        <div style="height:22px"></div>
+        <div class="fields">
+          <div class="fld"><div class="lab">昵称</div><div class="val ph">登录时也可以用它</div></div>
+          <div class="fld"><div class="lab">邮箱</div><div class="val ph">用来收验证码、换设备找回</div></div>
+          <div style="display:flex;gap:10px">
+            <div class="fld" style="flex:1"><div class="lab">验证码</div><div class="val ph">6 位数字</div></div>
+            <div style="min-width:104px;display:grid;place-items:center;border-radius:14px;
+                        background:rgba(91,155,213,.13);color:#2F6BFF;font-size:13.5px;font-weight:650">获取验证码</div>
+          </div>
+        </div>
+        <div style="height:22px"></div>
+        <button class="btn r16">确定</button>
+        <div class="link">已经有账号了？<b>去登录</b></div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 注册第二屏 -->
+  <div>
+    <p class="cap">⑤ 注册 · 第二屏</p>
+    <div class="phone">
+      <div class="bokeh"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+      <div class="body">
+        <div class="top"></div>
+        <img class="icon xs" src="logo.png" alt="初雪">
+        <h1 class="sm" style="margin-top:18px">设置密码</h1>
+        <p class="sub">第 2 步，共 2 步 · 记住你的 UID</p>
+        <div class="grp">你的 UID</div>
+        <div class="uid"><span class="num">10030</span><span class="hint">长按复制</span></div>
+        <div class="grp">头像（可选）</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:56px;height:56px;border-radius:50%;background:rgba(91,155,213,.15);
+                      display:grid;place-items:center;color:#2F6BFF;font-size:12.5px;font-weight:650">选择</div>
+          <div class="hint">不设也完全可以用。之后在「我的」里随时能换。</div>
+        </div>
+        <div class="grp">设置密码</div>
+        <div class="fields">
+          <div class="fld"><div class="lab">密码</div><div class="val">••••••••</div></div>
+          <div class="hint">8-64 位，只能用数字、英文大小写和这些符号：!@#$%^&amp;*()-_=+[]{}:,.?/</div>
+          <div class="fld"><div class="lab">再输一遍</div><div class="val">••••••••</div></div>
+        </div>
+        <div style="height:20px"></div>
+        <button class="btn r16">完成</button>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

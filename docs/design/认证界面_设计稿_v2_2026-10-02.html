@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>初雪 · 认证界面设计稿 v2（2026-10-02 定稿）</title>
+<style>
+  :root{
+    --bg-top:#F5F7FA; --bg-bottom:#E9F0FB;
+    --ink:#111111; --ink-sub:#8A9099; --ink-faint:#B4BAC3;
+    --line:#E6EAF0; --ph:#C3C9D2;
+    --brand:#2F6BFF; --brand-soft:#E8ECFF;
+    --disabled:#C9CFD8;
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:#DDE3EC;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:26px}
+  .row{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+  .cap{font:600 12px/1.6 ui-monospace,Menlo,monospace;color:#5A6472;margin:0 0 8px 2px}
+  .phone{width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;
+         background:
+    radial-gradient(130% 130% at 10% 8%,  rgba(166,203,246,.42), rgba(166,203,246,0) 70%),
+    radial-gradient(120% 120% at 98% 26%, rgba(185,215,248,.36), rgba(185,215,248,0) 70%),
+    radial-gradient(110% 110% at 22% 74%, rgba(176,208,240,.31), rgba(176,208,240,0) 70%),
+    radial-gradient(150% 150% at 90% 95%, rgba(198,221,249,.34), rgba(198,221,249,0) 70%),
+    radial-gradient(90% 90% at 55% 44%, rgba(255,255,255,.22), rgba(255,255,255,0) 70%),
+    linear-gradient(180deg,#F8FAFD 0%,#E7F0FC 100%);
+         box-shadow:0 18px 50px rgba(30,45,70,.22), 0 0 0 1px rgba(255,255,255,.6) inset}
+  .bokeh{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .bokeh i{position:absolute;border-radius:50%;display:block}
+  .b1{width:260px;height:260px;left:-70px;top:-40px;background:radial-gradient(circle,rgba(120,170,235,.30),rgba(120,170,235,0) 70%)}
+  .b2{width:200px;height:200px;right:-60px;top:120px;background:radial-gradient(circle,rgba(160,200,255,.32),rgba(160,200,255,0) 70%)}
+  .b3{width:150px;height:150px;left:40px;bottom:150px;background:radial-gradient(circle,rgba(190,215,250,.34),rgba(190,215,250,0) 70%)}
+  .b4{width:300px;height:300px;right:-90px;bottom:-90px;background:radial-gradient(circle,rgba(130,180,240,.26),rgba(130,180,240,0) 70%)}
+  .body{position:relative;height:100%;display:flex;flex-direction:column;padding:0 26px}
+
+  .icon{border-radius:26px;object-fit:cover;display:block;width:96px;height:96px;
+        box-shadow:0 14px 30px rgba(64,90,137,.28)}
+  .icon.sm{width:68px;height:68px;border-radius:19px}
+  .icon.xs{width:52px;height:52px;border-radius:15px}
+
+  h1{margin:0;font-size:27px;font-weight:750;letter-spacing:-.4px;color:var(--ink)}
+  h1.sm{font-size:23px}
+  .sub{margin:9px 0 0;font-size:13.5px;line-height:1.7;color:var(--ink-sub)}
+
+  .btn{display:flex;align-items:center;justify-content:center;width:100%;height:52px;border:0;
+       font-size:15.5px;font-weight:650;color:#fff;background:var(--ink);border-radius:16px;
+       box-shadow:0 10px 24px rgba(23,23,23,.20)}
+  .btn.off{background:var(--disabled);box-shadow:none}
+  .btn2{display:flex;align-items:center;justify-content:center;width:100%;height:52px;
+        font-size:15.5px;font-weight:600;color:var(--ink);background:#fff;
+        border:1px solid rgba(0,0,0,.08);border-radius:16px;box-shadow:0 4px 14px rgba(40,60,90,.05)}
+  .link{margin-top:16px;text-align:center;font-size:13.5px;color:var(--ink-sub)}
+  .link b{color:var(--ink);font-weight:650}
+
+  /* 卡片式输入框（本稿 = 实现的 1:1 依据） */
+  .fld{background:#fff;border:0;border-radius:24px;padding:11px 18px;
+       box-shadow:0 4px 14px rgba(32,58,99,.09)}
+  .fld .lab{font-size:11.5px;color:var(--ink-faint)}
+  .fld .val{margin-top:3px;font-size:15px;color:var(--ink)}
+  .fld .val.ph{color:var(--ph)}
+
+  /* 协议勾选 */
+  .agree{display:flex;gap:9px;align-items:flex-start;margin-top:16px;padding:0 2px}
+  .box{width:17px;height:17px;border-radius:5px;border:1.5px solid #C6CDD8;background:#fff;
+       flex:0 0 auto;margin-top:1px;display:grid;place-items:center;font-size:11px;color:#fff}
+  .box.on{background:var(--brand);border-color:var(--brand)}
+  .agree .txt{font-size:12.5px;line-height:1.55;color:var(--ink-sub)}
+  .agree .txt em{font-style:normal;color:var(--brand);font-weight:650}
+
+  .uid{display:flex;align-items:center;justify-content:space-between;
+       background:var(--brand-soft);border:1px solid rgba(91,155,213,.22);border-radius:14px;padding:13px 15px}
+  .uid .num{font-size:22px;font-weight:750;color:#1F4E79;letter-spacing:.5px}
+  .uid .hint{font-size:11.5px;color:#2F6BFF;font-weight:650}
+  .grp{font-size:11.5px;font-weight:650;color:#7A828D;letter-spacing:.06em;margin:20px 2px 9px}
+  .hint{font-size:11.5px;line-height:1.55;color:var(--ink-faint)}
+  .spacer{flex:1}
+  .top{height:58px}
+
+  /* 协议详情页 */
+  .legal-top{display:flex;align-items:center;gap:10px;padding:14px 0 6px}
+  .back{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.75);display:grid;
+        place-items:center;color:#5A6472;font-size:16px;box-shadow:0 2px 10px rgba(40,60,90,.08)}
+  .legal-t{font-size:16px;font-weight:700;color:var(--ink)}
+  .paper{margin-top:14px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.9);
+         border-radius:20px;padding:18px 16px;box-shadow:0 10px 30px rgba(40,60,90,.07);
+         overflow:auto;flex:1;margin-bottom:18px}
+  .paper h2{font-size:14px;font-weight:700;color:var(--ink);margin:16px 0 6px}
+  .paper h2:first-child{margin-top:0}
+  .paper p{font-size:12.5px;line-height:1.85;color:#4A5260;margin:0 0 8px}
+  .paper li{font-size:12.5px;line-height:1.85;color:#4A5260}
+</style>
+</head>
+<body>
+<div class="row">
+
+  <!-- ① 首次打开 · 选择页（未勾选 → 按钮禁用） -->
+  <div>
+    <p class="cap">① 首次打开 · 选择页（未勾选 → 登录/注册禁用）</p>
+    <div class="phone">
+      <div class="body">
+        <div class="spacer"></div>
+        <img class="icon" src="logo.png" alt="初雪">
+        <h1 style="margin-top:24px">欢迎使用Yuki初雪</h1>
+        <p class="sub">于人于物，细水长流弥足珍贵。</p>
+        <div style="height:30px"></div>
+        <button class="btn off">登录</button>
+        <div style="height:11px"></div>
+        <button class="btn2" style="opacity:.55">注册新账号</button>
+        <div class="agree">
+          <span class="box"></span>
+          <span class="txt">我已阅读并同意<em>《使用协议》</em>和<em>《隐私政策》</em></span>
+        </div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 首次打开 · 选择页（已勾选） -->
+  <div>
+    <p class="cap">② 同页（勾选后 → 可点）</p>
+    <div class="phone">
+      <div class="body">
+        <div class="spacer"></div>
+        <img class="icon" src="logo.png" alt="初雪">
+        <h1 style="margin-top:24px">欢迎使用Yuki初雪</h1>
+        <p class="sub">于人于物，细水长流弥足珍贵。</p>
+        <div style="height:30px"></div>
+        <button class="btn">登录</button>
+        <div style="height:11px"></div>
+        <button class="btn2">注册新账号</button>
+        <div class="agree">
+          <span class="box on">✓</span>
+          <span class="txt">我已阅读并同意<em>《使用协议》</em>和<em>《隐私政策》</em></span>
+        </div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 登录 -->
+  <div>
+    <p class="cap">③ 登录</p>
+    <div class="phone">
+      <div class="body">
+        <div class="top"></div>
+        <img class="icon sm" src="logo.png" alt="初雪">
+        <h1 style="margin-top:20px">欢迎回来</h1>
+        <p class="sub">登录以使用完整功能</p>
+        <div style="height:24px"></div>
+        <div class="fld"><div class="lab">UID 或昵称</div><div class="val ph">10001 或你的昵称</div></div>
+        <div style="height:12px"></div>
+        <div class="fld"><div class="lab">密码</div><div class="val">••••••••</div></div>
+        <div style="height:22px"></div>
+        <button class="btn">进入初雪</button>
+        <div class="link">没有账号？<b>注册新账号</b> · 忘记密码</div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 注册第一屏 -->
+  <div>
+    <p class="cap">④ 注册 · 第一屏</p>
+    <div class="phone">
+      <div class="body">
+        <div class="top"></div>
+        <img class="icon xs" src="logo.png" alt="初雪">
+        <h1 class="sm" style="margin-top:18px">创建账号</h1>
+        <p class="sub">第 1 步，共 2 步 · 先验证邮箱</p>
+        <div style="height:22px"></div>
+        <div class="fld"><div class="lab">昵称</div><div class="val ph">登录时也可以用它</div></div>
+        <div style="height:12px"></div>
+        <div class="fld"><div class="lab">邮箱</div><div class="val ph">用来收验证码、换设备找回</div></div>
+        <div style="height:12px"></div>
+        <div style="display:flex;gap:10px">
+          <div class="fld" style="flex:1"><div class="lab">验证码</div><div class="val ph">6 位数字</div></div>
+          <div style="min-width:104px;display:grid;place-items:center;border-radius:14px;
+                      background:var(--brand-soft);color:var(--brand);font-size:13.5px;font-weight:650">获取验证码</div>
+        </div>
+        <div style="height:22px"></div>
+        <button class="btn">确定</button>
+        <div class="link">已经有账号了？<b>去登录</b></div>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 注册第二屏 -->
+  <div>
+    <p class="cap">⑤ 注册 · 第二屏</p>
+    <div class="phone">
+      <div class="body">
+        <div class="top"></div>
+        <img class="icon xs" src="logo.png" alt="初雪">
+        <h1 class="sm" style="margin-top:18px">设置密码</h1>
+        <p class="sub">第 2 步，共 2 步 · 记住你的 UID</p>
+        <div class="grp">你的 UID</div>
+        <div class="uid"><span class="num">10030</span><span class="hint">长按复制</span></div>
+        <div class="hint" style="margin-top:8px">登录与找回都要用它，先存好。</div>
+        <div class="grp">头像（可选）</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:56px;height:56px;border-radius:50%;background:var(--brand-soft);
+                      display:grid;place-items:center;color:var(--brand);font-size:12.5px;font-weight:650">选择</div>
+          <div class="hint">不设也完全可以用。之后在「我的」里随时能换。</div>
+        </div>
+        <div class="grp">设置密码</div>
+        <div class="fld"><div class="lab">密码</div><div class="val">••••••••</div></div>
+        <div class="hint" style="margin-top:6px">8-64 位，只能用数字、英文大小写和这些符号：!@#$%^&amp;*()-_=+[]{}:,.?/</div>
+        <div style="height:12px"></div>
+        <div class="fld"><div class="lab">再输一遍</div><div class="val">••••••••</div></div>
+        <div style="height:20px"></div>
+        <button class="btn">完成</button>
+        <div class="spacer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 使用协议 -->
+  <div>
+    <p class="cap">⑥ 使用协议（可返回）</p>
+    <div class="phone">
+      <div class="body">
+        <div class="legal-top"><span class="back">‹</span><span class="legal-t">使用协议</span></div>
+        <div class="paper">
+          <h2>一、这份协议是什么</h2>
+          <p>你正在使用「Yuki 初雪」（下称"本应用"）。继续使用即表示你接受本协议。</p>
+          <h2>二、你的账号</h2>
+          <p>本应用需要账号才能使用。你需要提供昵称、邮箱与密码；请妥善保管密码，并记住你的 UID —— 它是找回账号的依据。</p>
+          <h2>三、你的内容</h2>
+          <p>对话、人设、记忆保存在你的手机上。若你配置了自己的模型服务商 API Key，对话内容直接发往该服务商，不经过本应用的服务器。</p>
+          <h2>四、请勿做的事</h2>
+          <p>不要用本应用生成违法内容，不要攻击或滥用服务器，不要尝试越权访问他人数据。</p>
+          <h2>五、服务可能变化</h2>
+          <p>本应用仍在开发中，功能可能调整或中断。我们会尽量提前说明。</p>
+          <h2>六、联系我们</h2>
+          <p>有问题请通过应用内「说点什么」反馈。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ 隐私政策 -->
+  <div>
+    <p class="cap">⑦ 隐私政策（可返回）</p>
+    <div class="phone">
+      <div class="body">
+        <div class="legal-top"><span class="back">‹</span><span class="legal-t">隐私政策</span></div>
+        <div class="paper">
+          <h2>一、什么留在你手机上</h2>
+          <p>对话记录、人设、记忆、设置、以及你填的 API Key —— 全部存在本机。这些内容不会上传到我们的服务器。</p>
+          <h2>二、什么会传到服务器</h2>
+          <p>只有这些：账号信息（昵称、邮箱、密码的加盐哈希、UID、头像）、你主动提交的反馈、以及可在设置里关闭的设备与用量统计。</p>
+          <h2>三、人设同步是端到端加密的</h2>
+          <p>换设备同步人设时，内容在你的手机上加密后才上传，服务器只存放密文，看不到明文。</p>
+          <h2>四、对话内容去哪了</h2>
+          <p>本应用不代理模型请求：对话直接发往你自己配置的服务商，适用那家的隐私政策。</p>
+          <h2>五、我们不做什么</h2>
+          <p>不卖你的数据，不投放广告，不读取你的对话内容。</p>
+          <h2>六、你可以要求删除</h2>
+          <p>想注销账号或删除服务器上的数据，请通过应用内反馈联系我们。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

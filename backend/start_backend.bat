@@ -36,7 +36,7 @@ REM (the watchdog runs as SYSTEM: no user PATH, and `py` may not exist there)
 set "PYEXE="
 for /f "delims=" %%P in ('%SYS%\where.exe python 2^>nul') do if not defined PYEXE set "PYEXE=%%P"
 if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python314\python.exe" set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python314\python.exe"
-if not defined PYEXE if exist "C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe" set "PYEXE=C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe"
+if not defined PYEXE if exist "C:\Users\<用户名>\AppData\Local\Programs\Python\Python314\python.exe" set "PYEXE=C:\Users\<用户名>\AppData\Local\Programs\Python\Python314\python.exe"
 if not defined PYEXE (
     echo [错误] 没找到 python.exe。
     echo        请安装 Python 3.10+，或改本脚本里的 python 绝对路径。
