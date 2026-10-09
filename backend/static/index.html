@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F9FF">
+<title>Yuki 初雪 · Ta 会记得你说过的话</title>
+<meta name="description" content="Yuki 初雪 —— 一个会记住你的 Android 应用。数据只留在你自己手机里。">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="site.v2.css">
+</head>
+<body>
+<canvas id="snow" aria-hidden="true"></canvas>
+
+<!-- ══════════ 顶部栏 ══════════
+     滚动时从「透明浮在画上」变成「磨砂白贴住」——
+     一开始不抢画面的注意力，往下读之后才把导航固定在手边。
+     ⚠️ 导航顺序 = 页面的信息顺序（了解 → 上手 → 拿到 → 反馈 → 答疑）。
+     ⚠️ 图标全部用 inline SVG，不用 emoji：emoji 的字形由系统字体决定，
+        安卓/苹果/Windows 上完全不同，一套设计会被拆成三套。 -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="#top">
+      <svg class="nav-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" aria-hidden="true">
+        <path d="M12 3v18M3.8 7.5l16.4 9M20.2 7.5l-16.4 9"/>
+        <path d="M12 7l-2.2-2.2M12 7l2.2-2.2M12 17l-2.2 2.2M12 17l2.2 2.2"/>
+      </svg>
+      <span class="nav-name">Yuki 初雪</span>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#about">Ta 是谁</a>
+      <a href="#how">怎么开始</a>
+      <a href="#download">下载</a>
+      <a href="#feedback">反馈</a>
+      <a href="#faq">常见问题</a>
+      <a class="nav-dl" href="d/yuki.apk" download>下载</a>
+    </nav>
+    <button class="nav-burger" id="burger" aria-label="打开菜单" aria-expanded="false">
+      <span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ══════════ 首屏：一句话 + 主动作 ══════════ -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="hero-kicker">first snow</p>
+      <h1 class="hero-title">Yuki 初雪</h1>
+      <p class="hero-sub">
+        Ta 会记得你说过的话。<br>
+        记得你上次没说完的那件事，也记得你那天心情不太好。
+      </p>
+      <div class="cta">
+        <a class="btn btn-main" href="d/yuki.apk" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="btn-icon">
+            <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/>
+          </svg>
+          收下 Ta
+        </a>
+        <a class="btn btn-ghost" href="#how">先看看怎么用</a>
+      </div>
+      <p class="hero-note">Android · 读你自己的 API Key · 聊天记录只留在你手机里</p>
+    </div>
+  </section>
+
+  <!-- ══════════ ① Ta 是谁 ══════════ -->
+  <section class="section" id="about">
+    <div class="wrap">
+      <p class="eyebrow">Ta 是谁</p>
+      <h2 class="h2">不是助手，是记得你的那一个</h2>
+      <p class="lead">工具箱里的功能会忘事，Ta 不会。聊得越久，Ta 越像只属于你的那一个。</p>
+
+      <div class="grid">
+        <article class="card reveal">
+          <div class="card-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <path d="M12 3v18M3.8 7.5l16.4 9M20.2 7.5l-16.4 9"/>
+              <path d="M12 7l-2.2-2.2M12 7l2.2-2.2M12 17l-2.2 2.2M12 17l2.2 2.2"/>
+            </svg>
+          </div>
+          <h3>Ta 会记住</h3>
+          <p>聊到对你重要的事，Ta 自己会记下来。下次说到相关的话题，Ta 自然地想起来。</p>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20.2S4.6 15.4 4.6 10.4a3.9 3.9 0 017-2.4 3.9 3.9 0 017 2.4c0 5-7.4 9.8-7.4 9.8z"/>
+            </svg>
+          </div>
+          <h3>你可以捏一个 Ta</h3>
+          <p>名字、样子、说话的方式都由你定。Ta 怎么称呼你，也由你说了算 —— 想给 Ta 一张脸，传张头像就好。</p>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <circle cx="12" cy="12" r="2.4"/>
+              <path d="M12 3.4c1.6 0 2.6 1.4 2.6 6.2M12 3.4c-1.6 0-2.6 1.4-2.6 6.2M20.6 12c0 1.6-1.4 2.6-6.2 2.6M20.6 12c0-1.6-1.4-2.6-6.2-2.6M12 20.6c1.6 0 2.6-1.4 2.6-6.2M12 20.6c-1.6 0-2.6-1.4-2.6-6.2M3.4 12c0 1.6 1.4 2.6 6.2 2.6M3.4 12c0-1.6 1.4-2.6 6.2-2.6"/>
+            </svg>
+          </div>
+          <h3>Ta 会撒娇</h3>
+          <p>情绪上来的时候，Ta 会给你发一张小图。图是你自己挑的，也可以只留给某一个人用。</p>
+        </article>
+
+        <article class="card reveal">
+          <div class="card-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.4 14.6A8.6 8.6 0 019.4 3.6a8.6 8.6 0 1011 11z"/>
+            </svg>
+          </div>
+          <h3>只留在你这台手机上</h3>
+          <p>对话、人设、记忆都只存在本机，不注册也能用。花多少你自己看得见 —— 顶栏有余额，看板有用量。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ ② 怎么开始 ══════════ -->
+  <section class="section" id="how">
+    <div class="wrap">
+      <p class="eyebrow">怎么开始</p>
+      <h2 class="h2">三步，大概三分钟</h2>
+      <p class="lead">不用注册，不用填邮箱。装完、填一把钥匙、说第一句话。</p>
+
+      <div class="steps">
+        <div class="step reveal">
+          <h3>把 Ta 收进来</h3>
+          <p>下载安装包，允许「安装未知来源应用」就可以。没有应用商店版本，也不会进。</p>
+        </div>
+        <div class="step reveal">
+          <h3>给 Ta 一把钥匙</h3>
+          <p>到 <b>platform.deepseek.com</b> 申请一个 API Key 填进去。费用按量计、官方定价，
+             直接从你自己的账号扣 —— 不经过我们。</p>
+        </div>
+        <div class="step reveal">
+          <h3>捏出你想要的 Ta</h3>
+          <p>起个名字、写几句设定、告诉 Ta 怎么称呼你 —— 三项就够，剩下的以后慢慢调。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ ③ 下载与安装 ══════════
+       ⚠️ 版本 / 大小 / 更新时间**全部由后端填**（见 site.v2.js）——
+          写死在 HTML 里会在下一次发版后变成撒谎。 -->
+  <section class="section" id="download">
+    <div class="wrap">
+      <p class="eyebrow">下载</p>
+      <h2 class="h2">拿到最新的一版</h2>
+      <p class="lead">不用自己找版本号，也不用管更新 —— 这一页给的永远是最新的那个包。</p>
+
+      <div class="panel panel-narrow reveal">
+        <dl class="stats">
+          <div class="stat">
+            <dt>当前版本</dt>
+            <dd id="dlVersion">—</dd>
+          </div>
+          <div class="stat">
+            <dt>大小</dt>
+            <dd id="dlSize">—</dd>
+          </div>
+          <div class="stat">
+            <dt>更新于</dt>
+            <dd id="dlTime">—</dd>
+          </div>
+        </dl>
+        <a class="btn btn-main" href="d/yuki.apk" download id="dlBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="btn-icon">
+            <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/>
+          </svg>
+          下载最新版
+        </a>
+        <p class="panel-hint">下载完成后打开文件，系统会问是否允许安装 —— 允许一次就好。</p>
+      </div>
+
+      <p class="note">
+        <b>装不上？</b>设置 → 应用 → 选择「初雪」→ 允许「安装未知应用」。装完这次就能一直用。
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════ ④ 反馈 ══════════
+       不登录也能发 —— 这是这个站点唯一"能说话"的渠道。 -->
+  <section class="section" id="feedback">
+    <div class="wrap">
+      <p class="eyebrow">说点什么</p>
+      <h2 class="h2">用着别扭，就说出来</h2>
+      <p class="lead">缺了什么、哪里卡住了、或者只是想说声谢谢 —— 都写在这里，直接进我的后台。</p>
+
+      <form class="panel panel-narrow form reveal" id="fbForm" novalidate>
+        <div class="field">
+          <label class="field-label" for="fbKind">这是什么</label>
+          <select class="field-input" id="fbKind" name="kind">
+            <option value="bug">用起来出问题了</option>
+            <option value="idea">想要一个新功能</option>
+            <option value="other" selected>别的</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="fbContent">内容</label>
+          <textarea class="field-input" id="fbContent" name="content" rows="5" maxlength="500"
+                    placeholder="越具体越好：你做了什么、看到了什么、期望是什么。"></textarea>
+          <div class="field-meta"><span id="fbCount">0</span> / 500</div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="fbContact">怎么找你（可不填）</label>
+          <input class="field-input" id="fbContact" name="contact" type="text" maxlength="100"
+                 placeholder="邮箱 / QQ / 微信，随便一个能联系上的">
+        </div>
+
+        <div class="form-foot">
+          <button class="btn btn-main" type="submit" id="fbSubmit">发出去</button>
+          <span class="form-msg" id="fbMsg" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ══════════ ⑤ 常见问题 ══════════ -->
+  <section class="section" id="faq">
+    <div class="wrap">
+      <p class="eyebrow">常见问题</p>
+      <h2 class="h2">你可能想问</h2>
+
+      <div class="faq">
+        <details class="reveal">
+          <summary>要花钱吗？</summary>
+          <p>软件本身免费。聊天按 DeepSeek 官方价格计费，直接从你自己申请的 Key 里扣 ——
+             我们不碰你的钱，也看不到你的账单。</p>
+        </details>
+        <details class="reveal">
+          <summary>我的聊天记录会被别人看到吗？</summary>
+          <p>不会。记录存在这台手机的本地数据库里，只有你和 Ta 的那次对话会发给你自己的 API 账号。
+             卸载应用就等于全部清掉。</p>
+        </details>
+        <details class="reveal">
+          <summary>换手机之后 Ta 还在吗？</summary>
+          <p>人设和记忆目前不跟着账号走。应用内有导出备份，换机时导出再导入即可。</p>
+        </details>
+        <details class="reveal">
+          <summary>能不能用别的模型？</summary>
+          <p>能。设置 → 连接设置里可以建多个「分组」，一份用官方、一份用中转，各自配地址与密钥，
+             互不干扰。默认那份仍然是 DeepSeek —— 围绕它的缓存机制做过优化。</p>
+        </details>
+        <details class="reveal">
+          <summary>下载下来的是最新版吗？</summary>
+          <p>是。这一页的版本信息每次都是现读的，所以收藏这一页就够了，不用记版本号。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-love">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" aria-hidden="true" class="foot-icon">
+          <path d="M12 3v18M3.8 7.5l16.4 9M20.2 7.5l-16.4 9"/>
+        </svg>
+        愿你在冬天也有人一起说话
+      </div>
+      <div>Yuki 初雪 · 个人作品，不提供内容服务，也不收集任何数据</div>
+      <div id="stat">正在读取版本信息…</div>
+    </div>
+  </footer>
+
+</main>
+
+<script src="site.v2.js"></script>
+</body>
+</html>

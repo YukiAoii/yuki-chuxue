@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yuki 初雪 · 控制台</title>
+<link rel="stylesheet" href="admin.css">
+<link rel="icon" href="data:,">
+<script>
+/* ⚠️ 主题必须在**首屏绘制之前**定下来。
+   放进 admin.js 会在脚本加载后才生效，浅色用户先看到一帧深色。 */
+(function () {
+  try {
+    var t = localStorage.getItem('yuki-admin-theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
+        ? 'light' : 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+</script>
+</head>
+<body>
+
+<!-- ══════════════════ 登录 ══════════════════ -->
+<div id="login" class="auth hidden">
+  <form class="auth-card" id="loginForm" autocomplete="on">
+    <div class="auth-brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2"></circle>
+        <path d="M24 8v32M10 16l28 16M38 16L10 32" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" fill="none"></path>
+        <path d="M24 15l-5 5M24 15l5 5M24 33l-5-5M24 33l5-5" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round" fill="none"></path>
+      </svg>
+      <div>
+        <h1>Yuki 初雪</h1>
+        <p>控制台</p>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>用户名</span>
+      <input id="loginUser" name="username" type="text" autocomplete="username" required>
+    </label>
+    <label class="field">
+      <span>密码</span>
+      <input id="loginPass" name="password" type="password" autocomplete="current-password" required>
+    </label>
+
+    <div id="loginError" class="alert alert-error hidden"></div>
+    <button class="btn btn-primary btn-block" type="submit" id="loginBtn">登录</button>
+
+    <p class="auth-hint">
+      首次启动的管理员密码打印在<b>后端控制台</b>（启动日志里）。<br>
+      忘了密码？<a href="#" id="forgotLink">用邮箱重置</a>
+    </p>
+  </form>
+</div>
+
+<!-- ══════════════════ 忘记密码 ══════════════════
+     管理员密码是首次启动随机生成、只打印一次的，库里存的是 PBKDF2（不可逆）——
+     忘了就再也拿不回来。这一页只负责把两步走完，判断都在后端。 -->
+<div id="forgot" class="auth hidden">
+  <form class="auth-card" id="forgotForm" autocomplete="off">
+    <div class="auth-brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2"></circle>
+        <path d="M24 8v32M10 16l28 16M38 16L10 32" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" fill="none"></path>
+      </svg>
+      <div>
+        <h1>重置密码</h1>
+        <p>用邮件验证身份</p>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>后台配置的发件邮箱</span>
+      <input id="fgVerifyEmail" type="email" placeholder="与后端 SMTP 发件人一致">
+    </label>
+    <label class="field">
+      <span>接收重置码的邮箱</span>
+      <input id="fgToEmail" type="email" placeholder="发到这个邮箱">
+    </label>
+    <div id="forgotError" class="alert alert-error hidden"></div>
+    <button class="btn btn-primary btn-block" type="submit" id="forgotSend">发送重置码</button>
+
+    <label class="field" style="margin-top:16px">
+      <span>邮件里的验证码</span>
+      <input id="fgCode" type="text" placeholder="6 位数字">
+    </label>
+    <label class="field">
+      <span>新密码</span>
+      <input id="fgNewPass" type="password" autocomplete="new-password">
+    </label>
+    <div id="forgotMsg" class="alert hidden"></div>
+    <button class="btn btn-block" type="button" id="forgotReset">重置密码</button>
+
+    <p class="auth-hint"><a href="#" id="backToLogin">← 返回登录</a></p>
+  </form>
+</div>
+
+<!-- ══════════════════ 控制台 ══════════════════ -->
+<div id="app" class="shell hidden">
+
+  <aside id="sidebar" class="sidebar">
+    <div class="side-head">
+      <div class="side-logo">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.6"></circle>
+          <path d="M24 8v32M10 16l28 16M38 16L10 32" stroke="currentColor" stroke-width="2.6"
+                stroke-linecap="round" fill="none"></path>
+        </svg>
+      </div>
+      <div class="side-title">
+        <strong>Yuki 初雪</strong>
+        <span>控制台</span>
+      </div>
+      <button id="sideClose" class="icon-btn side-close" type="button" aria-label="收起菜单">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+      </button>
+    </div>
+
+    <nav id="nav" class="nav"></nav>
+
+    <div class="side-foot">
+      <div id="sideStatus" class="side-status"></div>
+      <button id="logoutBtn" class="btn btn-ghost btn-block btn-sm" type="button">退出登录</button>
+    </div>
+  </aside>
+
+  <div id="scrim" class="scrim"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button id="navToggle" class="icon-btn hamburger" type="button" aria-label="菜单">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+      </button>
+      <div class="tb-titles">
+        <h1 id="pageTitle">仪表盘</h1>
+        <p id="pageDesc" class="muted"></p>
+      </div>
+      <div class="tb-right">
+        <span id="whoami" class="who"></span>
+        <button id="themeToggle" class="icon-btn" type="button" title="切换日间 / 夜间">
+          <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.6"></path></svg>
+        </button>
+        <button id="refreshBtn" class="icon-btn" type="button" title="刷新当前页">
+          <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z" fill="currentColor"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <section id="view" class="view"></section>
+  </main>
+</div>
+
+<!-- 轻提示（顶部居中） -->
+<div id="toast" class="toast"><span id="toastIco" class="toast-ico"></span><span id="toastText" class="toast-text"></span></div>
+
+<!-- 确认框 -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="modalTitle">确认</h3>
+    <div id="modalBody" class="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn" id="modalCancel" type="button">取消</button>
+      <button class="btn btn-primary" id="modalOk" type="button">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

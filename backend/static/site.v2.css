@@ -1,0 +1,562 @@
+/* Yuki 初雪 · 官网样式（v3 设计系统，整站重做）
+ *
+ * ⚠️ 三条继承下来的硬约束（改版不许丢）：
+ *   1. **背景图只在移动端出现** —— 桌面端铺图会被裁成一条、正文压在图上也不好读。
+ *   2. 安卓点按的**系统蓝块**要去掉，但要**补上自己的按压反馈** —— 只去掉不补更难用。
+ *   3. 调性偏**女性向**：圆角更大、留白更松、雪白与淡冰蓝为主，淡紫只做点缀；
+ *      文字不用纯黑，用柔和的深蓝灰。
+ *
+ * ── 这一版重做了什么 ─────────────────────────────────────────────
+ * 上一版是"一页一路往下摆"，每块自己定间距/圆角/阴影，于是：
+ *   · 同一页出现 5 种间距、3 种圆角，眼睛说不上来哪里乱，但就是不整齐；
+ *   · 移动端断点只有一条，中间宽度（平板）是塌的；
+ *   · 焦点态（键盘 Tab）完全没做。
+ * 这一版先把**尺度**收成一套（间距 8 的倍数、圆角 4 档、阴影 3 档、字号 7 档），
+ * 再让每个组件只从这套尺度里取 —— 整齐是"取同一个尺子"的结果，不是调出来的。
+ */
+
+/* ══════════════════ ① 设计令牌 ══════════════════ */
+:root {
+  /* 色 —— 雪白 / 冰蓝 / 淡紫点缀 + 一个暖色只用在"注意"上 */
+  --ink:        #1E3550;   /* 正文：柔和深蓝灰，不用纯黑 */
+  --ink-2:      #4A6B8A;   /* 次级文字 */
+  --ink-3:      #7B96B4;   /* 弱化文字（标签、注脚） */
+  --brand:      #4C7FB8;
+  --brand-2:    #7FA8D9;
+  --brand-soft: #E8F2FC;
+  --lilac:      #A98BC9;
+  --amber:      #C9832E;
+  --green:      #2E8B6B;
+  --rose:       #C4664B;
+
+  --paper:      rgba(255, 255, 255, .78);
+  --paper-solid:#FFFFFF;
+  --line:       rgba(120, 155, 190, .22);
+  --line-2:     rgba(120, 155, 190, .14);
+
+  /* 尺度：一切都是 8 的倍数（除圆角），眼睛才读得出"整齐" */
+  --sp-1: 8px;  --sp-2: 12px; --sp-3: 16px; --sp-4: 24px;
+  --sp-5: 32px; --sp-6: 48px; --sp-7: 64px; --sp-8: 88px;
+
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 30px; --r-pill: 999px;
+
+  --sh-1: 0 1px 2px rgba(30, 53, 80, .05), 0 6px 18px rgba(76, 127, 184, .08);
+  --sh-2: 0 2px 6px rgba(30, 53, 80, .06), 0 16px 40px rgba(76, 127, 184, .13);
+  --sh-3: 0 4px 12px rgba(30, 53, 80, .08), 0 28px 64px rgba(76, 127, 184, .18);
+
+  --maxw: 1080px;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }  /* 锚点别被固定顶栏吃掉 */
+
+/* ⚠️ 安卓 Chrome 点任何可点元素都会盖一层半透明蓝块。去掉它 ——
+   各控件自己的 `:active` 会补上按压反馈（这是"去掉"与"补上"的一对，缺一不可）。 */
+* { -webkit-tap-highlight-color: transparent; }
+a, button { -webkit-touch-callout: none; }
+
+body {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
+               "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 16px;
+  color: var(--ink);
+  line-height: 1.75;
+  background: linear-gradient(175deg, #FCFEFF 0%, #EEF6FD 42%, #DFEDFA 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── 背景图：**只在移动端** ── */
+@media (max-width: 820px) {
+  body {
+    background-image: url("bg.jpg");
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  /* 图上压一层白纱：字要读得清，又不能把画盖死。
+     ⚠️ 这组数值是实拍截图调出来的 —— 再淡小字就糊，再浓画就没了。 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,.54) 0%, rgba(255,255,255,.76) 55%, rgba(240,247,255,.95) 100%);
+  }
+}
+
+/* ⚠️ 键盘 Tab 的焦点态：上一版完全没做，用键盘走一遍会"不知道自己在哪"。
+   只在键盘导航时出现（`:focus-visible`），鼠标点击不给虚线框。 */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ══════════════════ ② 排版基元 ══════════════════ */
+.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--sp-4); }
+
+.section { padding: var(--sp-8) 0 var(--sp-6); }
+.section > .wrap > .eyebrow:first-child { margin-top: 0; }
+
+/* 小节上方的"眉标"：一行小字 + 一条短横线。
+   它比 h2 先出现，作用是让读者在滚到标题之前就知道"这一节在讲什么"。 */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  /* ⚠️ 这里**不能**加 `text-transform: uppercase`：项目通篇用「Ta」这个写法，
+     大写会把它变成「TA」，品牌口径就丢了（中文本身不受影响，所以只在 Ta 上出错）。 */
+  color: var(--brand);
+}
+.eyebrow::before {
+  content: "";
+  width: 22px; height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-2));
+}
+
+.h2 {
+  font-size: clamp(23px, 4.6vw, 34px);
+  line-height: 1.32;
+  letter-spacing: -.01em;
+  font-weight: 700;
+}
+
+.lead {
+  margin-top: var(--sp-2);
+  max-width: 46ch;
+  font-size: clamp(14.5px, 2.6vw, 16.5px);
+  color: var(--ink-2);
+}
+
+.note { max-width: 56ch; margin-top: var(--sp-3); font-size: 13.5px; line-height: 1.85; color: var(--ink-3); }
+.note b { color: var(--ink-2); }
+
+/* ══════════════════ ③ 顶部栏 ══════════════════ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  border-bottom: 1px solid transparent;
+  transition: background .3s var(--ease), border-color .3s var(--ease), backdrop-filter .3s var(--ease);
+}
+.nav.solid {
+  background: rgba(250, 253, 255, .82);
+  border-bottom-color: var(--line-2);
+  backdrop-filter: saturate(1.7) blur(14px);
+}
+.nav-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 10px var(--sp-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: var(--sp-1);
+  font-weight: 700; font-size: 16px; letter-spacing: .02em;
+  color: var(--ink); text-decoration: none;
+}
+.nav-mark { width: 20px; height: 20px; color: var(--brand); flex: none; }
+
+.nav-links { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.nav-links a {
+  padding: 8px 12px;
+  border-radius: var(--r-pill);
+  font-size: 14.5px;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color .18s var(--ease), background .18s var(--ease);
+}
+.nav-links a:hover { color: var(--ink); background: rgba(127, 168, 217, .12); }
+.nav-links a:active { background: rgba(127, 168, 217, .2); }
+
+.nav-links a.nav-dl {
+  margin-left: var(--sp-1);
+  padding: 9px 18px;
+  color: #fff;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--brand-2), var(--brand));
+  box-shadow: 0 4px 14px rgba(76, 127, 184, .28);
+}
+.nav-links a.nav-dl:hover { color: #fff; filter: brightness(1.05); }
+.nav-links a.nav-dl:active { transform: translateY(1px); }
+
+.nav-burger {
+  display: none;
+  margin-left: auto;
+  width: 40px; height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, .7);
+  cursor: pointer;
+  position: relative;
+}
+.nav-burger span {
+  position: absolute; left: 50%; width: 17px; height: 1.8px;
+  border-radius: 2px; background: var(--ink-2);
+  transform: translateX(-50%);
+  transition: transform .26s var(--ease), opacity .2s var(--ease);
+}
+.nav-burger span:first-child { top: 15px; }
+.nav-burger span:last-child  { top: 22px; }
+.nav-burger[aria-expanded="true"] span:first-child { top: 18.5px; transform: translateX(-50%) rotate(45deg); }
+.nav-burger[aria-expanded="true"] span:last-child  { top: 18.5px; transform: translateX(-50%) rotate(-45deg); }
+
+@media (max-width: 820px) {
+  .nav-burger { display: block; }
+  .nav-links {
+    position: absolute;
+    top: calc(100% + 8px); right: var(--sp-4); left: var(--sp-4);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: var(--sp-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: rgba(252, 254, 255, .96);
+    box-shadow: var(--sh-2);
+    backdrop-filter: blur(16px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity .22s var(--ease), transform .22s var(--ease);
+  }
+  .nav-links.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .nav-links a { padding: 12px 14px; border-radius: var(--r-md); font-size: 15.5px; }
+  .nav-links a.nav-dl { margin: var(--sp-1) 0 0; text-align: center; }
+}
+
+/* ══════════════════ ④ 首屏 ══════════════════ */
+.hero {
+  position: relative;
+  padding: calc(var(--sp-8) + 56px) 0 var(--sp-8);
+  text-align: center;
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  top: -14%; left: 50%;
+  z-index: 0;                       /* 光晕在下，正文在上 */
+  width: min(760px, 118vw); height: min(760px, 118vw);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255,255,255,.96) 0%, rgba(255,255,255,.5) 34%, rgba(255,255,255,0) 68%),
+    radial-gradient(circle at 52% 54%, rgba(169,139,201,.16) 0%, rgba(169,139,201,0) 62%);
+  pointer-events: none;
+}
+/* ⚠️ 只给 `.wrap` 加定位，**不要**写成 `.hero > *` ——
+   `.hero-glow` 也是 `.hero` 的直接子元素，而 `.hero > *` 与 `.hero-glow`
+   特异性相同（都是 0,1,0），谁在后面谁赢。上一版就是这么把光晕的
+   `position:absolute` 覆盖成 `relative` 的：光晕变成 760×760 的**普通块**，
+   把整个首屏往下推了 760px，页面看起来"首屏空白"（实测标题 y=934、视口只有 900）。 */
+.hero .wrap { position: relative; z-index: 1; }
+
+.hero-kicker {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .34em;
+  text-transform: lowercase;
+  color: var(--brand-2);
+}
+.hero-title {
+  margin-top: var(--sp-1);
+  font-size: clamp(40px, 10vw, 78px);
+  line-height: 1.06;
+  letter-spacing: -.02em;
+  font-weight: 800;
+  color: var(--ink);                /* 兜底：渐变字体没生效时仍然是深蓝灰，不是隐形 */
+}
+/* ⚠️ 渐变色文字必须走 `@supports` 包一层。
+   直接写 `color: transparent` + `background-clip: text` 的做法，
+   在不支持裁剪的浏览器（或裁剪失效的渲染路径）里会得到**透明文字** ——
+   页面看起来就是"标题不见了"。这里做成"支持才上渐变，不支持就实色"。 */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-title {
+    background: linear-gradient(150deg, var(--ink) 18%, var(--brand) 62%, var(--lilac) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+.hero-sub {
+  margin: var(--sp-3) auto 0;
+  max-width: 34ch;
+  font-size: clamp(15px, 3.2vw, 18px);
+  color: var(--ink-2);
+}
+.hero-note { margin-top: var(--sp-4); font-size: 12.5px; color: var(--ink-3); }
+
+.cta {
+  margin-top: var(--sp-5);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+/* ══════════════════ ⑤ 按钮 ══════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 14px 26px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-size: 15.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .18s var(--ease), box-shadow .22s var(--ease),
+              background .22s var(--ease), color .18s var(--ease);
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-main {
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-2) 0%, var(--brand) 100%);
+  box-shadow: 0 8px 26px rgba(76, 127, 184, .32);
+}
+.btn-main:hover { box-shadow: 0 12px 34px rgba(76, 127, 184, .4); }
+
+.btn-ghost {
+  color: var(--brand);
+  background: rgba(255, 255, 255, .74);
+  border-color: var(--line);
+}
+.btn-ghost:hover { background: #fff; box-shadow: var(--sh-1); }
+
+.btn-icon { width: 18px; height: 18px; flex: none; }
+
+.btn[disabled], .btn.is-busy { opacity: .62; pointer-events: none; }
+
+/* ══════════════════ ⑥ 卡片网格 ══════════════════ */
+.grid {
+  margin-top: var(--sp-5);
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+}
+.card {
+  padding: var(--sp-4);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--sh-1);
+  backdrop-filter: blur(12px);
+  transition: transform .26s var(--ease), box-shadow .26s var(--ease), border-color .26s var(--ease);
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--sh-2); border-color: var(--line); }
+.card h3 { font-size: 16.5px; font-weight: 650; letter-spacing: -.005em; }
+.card p { margin-top: var(--sp-1); font-size: 14px; line-height: 1.82; color: var(--ink-2); }
+
+.card-mark {
+  display: grid;
+  place-items: center;
+  width: 42px; height: 42px;
+  margin-bottom: var(--sp-3);
+  border-radius: 13px;
+  color: var(--brand);
+  background: linear-gradient(140deg, rgba(127,168,217,.22), rgba(169,139,201,.16));
+}
+.card-mark svg { width: 21px; height: 21px; }
+
+/* ══════════════════ ⑦ 步骤 ══════════════════ */
+.steps {
+  margin-top: var(--sp-5);
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  counter-reset: step;
+}
+.step {
+  position: relative;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-5);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--sh-1);
+  counter-increment: step;
+}
+/* 序号自绘：用 CSS 计数器，HTML 里就不用写"1 / 2 / 3"——
+   改顺序时不会出现"文字说 2、位置是 3"这种对不上的情况。 */
+.step::before {
+  content: counter(step);
+  position: absolute;
+  top: var(--sp-4); left: var(--sp-4);
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-size: 13px; font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.step h3 { font-size: 16px; font-weight: 650; padding-left: var(--sp-5); }
+.step p { margin-top: var(--sp-2); font-size: 14px; line-height: 1.82; color: var(--ink-2); }
+.step p b { color: var(--ink); font-weight: 600; }
+
+/* ══════════════════ ⑧ 下载面板 ══════════════════ */
+.panel {
+  margin-top: var(--sp-5);
+  padding: var(--sp-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.94), rgba(238,246,253,.9));
+  box-shadow: var(--sh-2);
+  backdrop-filter: blur(14px);
+}
+.panel-narrow { max-width: 560px; margin-left: auto; margin-right: auto; }
+
+/* 三格版本信息：桌面一行、手机三行。
+   ⚠️ 用 `auto-fit` + `minmax` 而不是写死断点 —— 中间宽度（平板）才不会塌。 */
+.stats {
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+}
+.stat {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, .72);
+}
+.stat dt { font-size: 12.5px; color: var(--ink-3); }
+.stat dd {
+  margin-top: 3px;
+  font-size: 16px; font-weight: 700; letter-spacing: -.01em;
+  color: var(--ink);
+  word-break: break-all;
+}
+.panel .btn { margin-top: var(--sp-4); width: 100%; }
+.panel-hint { margin-top: var(--sp-2); font-size: 12.8px; line-height: 1.8; color: var(--ink-3); text-align: center; }
+
+/* ══════════════════ ⑨ 表单 ══════════════════ */
+.form { margin-top: var(--sp-5); }
+.field { margin-bottom: var(--sp-3); }
+.field-label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-size: 13.5px; font-weight: 600;
+  color: var(--ink-2);
+}
+.field-input {
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .82);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  outline: none;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);
+}
+.field-input::placeholder { color: var(--ink-3); }
+.field-input:focus {
+  border-color: var(--brand-2);
+  background: #fff;
+  box-shadow: 0 0 0 3.5px rgba(127, 168, 217, .18);
+}
+textarea.field-input { resize: vertical; min-height: 118px; line-height: 1.78; }
+.field-meta { margin-top: 5px; text-align: right; font-size: 12px; color: var(--ink-3); }
+
+.form-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+.form-msg { font-size: 13.5px; color: var(--ink-2); }
+.form-msg.ok  { color: var(--green); }
+.form-msg.bad { color: var(--rose); }
+
+/* ══════════════════ ⑩ 常见问题 ══════════════════ */
+.faq { margin-top: var(--sp-5); display: grid; gap: var(--sp-2); }
+.faq details {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  transition: border-color .22s var(--ease), box-shadow .22s var(--ease);
+}
+.faq details[open] { border-color: var(--line); box-shadow: var(--sh-2); }
+.faq summary {
+  position: relative;
+  padding: var(--sp-3) 52px var(--sp-3) var(--sp-4);
+  font-size: 15.5px; font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {
+  content: "";
+  position: absolute; right: var(--sp-4); top: 50%;
+  width: 14px; height: 14px;
+  transform: translateY(-50%);
+  background:
+    linear-gradient(var(--brand), var(--brand)) center / 100% 1.8px no-repeat,
+    linear-gradient(var(--brand), var(--brand)) center / 1.8px 100% no-repeat;
+  border-radius: 2px;
+  transition: transform .26s var(--ease);
+}
+.faq details[open] summary::after { transform: translateY(-50%) rotate(90deg); }
+.faq details p {
+  padding: 0 var(--sp-4) var(--sp-4);
+  font-size: 14px; line-height: 1.85; color: var(--ink-2);
+}
+
+/* ══════════════════ ⑪ 页脚 ══════════════════ */
+footer {
+  margin-top: var(--sp-7);
+  padding: var(--sp-6) 0 var(--sp-7);
+  border-top: 1px solid var(--line-2);
+  text-align: center;
+  font-size: 13px;
+  line-height: 2;
+  color: var(--ink-3);
+}
+.foot-love { display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--brand); font-weight: 600; }
+.foot-icon { width: 15px; height: 15px; }
+
+/* ══════════════════ ⑫ 入场动画 ══════════════════
+   ⚠️ 默认**可见**、动画只做"从下方浮上来"：上一版是 `.reveal{opacity:0}` 等 JS 加 `.in`，
+   JS 一旦没跑（网络慢、被拦）整页正文就是**全白**。这里改成安全的方向 ——
+   最坏情况只是"没有动画"，而不是"看不到内容"。 */
+.reveal { transition: transform .5s var(--ease); }
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { transform: translateY(14px); }
+  .reveal.in { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transform: none; }
+}
+
+/* ══════════════════ ⑬ 组合修正 ══════════════════
+   组件是叠着用的，这里收掉两处叠加后不成立的规则：
+   · 表单自己就是一块 panel，所以"面板里的按钮占满整行"对它不适用
+     （反馈是"按钮 + 结果提示"并排，占满会把提示挤到下一行）。 */
+.form.panel .btn { margin-top: 0; width: auto; }
+
+/* 飘雪画布：铺满但不吃点击 */
+#snow { position: fixed; inset: 0; z-index: -1; pointer-events: none; }

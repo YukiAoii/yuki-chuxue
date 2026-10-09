@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Yuki 初雪 · Ta 此刻</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css?v=20261006b">
+</head>
+<body>
+
+<!-- 背景：淡蓝光晕 + 细雪（雪色取 App 开屏的 #9FB6DD） -->
+<div class="bg" aria-hidden="true">
+  <div class="halo halo-a"></div>
+  <div class="halo halo-b"></div>
+  <div class="snow" id="snow"></div>
+</div>
+
+<!-- ─── 登录 ─── -->
+<main id="view-login" class="view view-center">
+  <section class="card login-card">
+    <div class="logo-row">
+      <div class="logo-mark" aria-hidden="true"></div>
+      <div>
+        <h1 class="brand-grad">Yuki 初雪</h1>
+        <p class="brand-sub">Ta 此刻的样子</p>
+      </div>
+    </div>
+    <p class="login-lead">登录你的软件账号，看看每个角色现在的心情。</p>
+    <form id="login-form">
+      <label class="field">
+        <span>软件账号（UID）</span>
+        <input id="login-account" type="text" inputmode="numeric" autocomplete="username"
+               placeholder="例如 10001" required>
+      </label>
+      <label class="field">
+        <span>密码</span>
+        <input id="login-password" type="password" autocomplete="current-password"
+               placeholder="和 App 里同一个密码" required>
+      </label>
+      <button class="btn primary" type="submit" id="login-btn">登 录</button>
+      <p class="form-error" id="login-error" hidden></p>
+    </form>
+    <p class="footnote">和 App 用同一个账号登录 · 只能看到自己的角色</p>
+  </section>
+</main>
+
+<!-- ─── 主视图 ─── -->
+<main id="view-main" class="view" hidden>
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark small" aria-hidden="true"></div>
+      <span class="brand-line">Yuki 初雪</span>
+    </div>
+    <div class="topbar-right">
+      <span class="me-name" id="me-name"></span>
+      <button class="btn ghost" id="refresh-btn">刷新</button>
+      <button class="btn ghost" id="logout-btn">退出</button>
+    </div>
+  </header>
+
+  <section id="persona-grid" class="grid" aria-live="polite"></section>
+
+  <div class="card empty" id="empty-hint" hidden>
+    <p class="empty-title">还没有角色的状态可以看</p>
+    <p class="empty-sub">在 App 里把角色接入之后，和 Ta 说说话，<br>这里就会亮起 Ta 此刻的样子。</p>
+  </div>
+
+  <p class="form-error center" id="main-error" hidden></p>
+  <p class="footnote">这些状态只属于你 · 别人看不到你的角色</p>
+</main>
+
+<script src="app.js?v=20261006c"></script>
+</body>
+</html>

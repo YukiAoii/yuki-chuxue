@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 用系统自带的 NoActionBar 主题作为壳；真正的视觉全部由 Compose 绘制。
+         不依赖 Material Components XML 主题，避免额外引入 design 库。 -->
+    <style name="Theme.YukiChuxue" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <!--
+          window 底色必须与 Compose 主题的 background 一致（FlatBackground = #F5F7FA）。
+
+          为什么不能用纯白：NavHost 切换动画期间两个页面会同时半透明，
+          叠加 alpha 不足 1，会按比例透出这一层。底色若是纯白，就会在浅蓝界面上
+          闪一下白；若底色是黑的（默认深色主题），就是用户报告的「黑框一闪」。
+          改成与主题同色后，无论透出多少都看不出接缝。
+
+          ⚠️ 2026-09-27 修正：这里原来是 #F5F8FC（水彩时代的底色）。
+          扁平风改版后 FlatBackground 变成 #F5F7FA，而这一行没跟上 ——
+          上面的注释一直说着"必须一致"，值却悄悄漂了一个色阶。
+        -->
+        <item name="android:windowBackground">#F5F7FA</item>
+    </style>
+
+    <!--
+      ═══════════════════════════════════════════════════════════════════════
+       启动屏主题（AndroidX SplashScreen）
+      ═══════════════════════════════════════════════════════════════════════
+      这是**进程起来之前**系统显示的那一层窗口。没有它，冷启动会先闪一下
+      主题底色（甚至白屏）才看到 Compose 开屏。
+
+      ⚠️ 两条不能错的：
+        ① `windowSplashScreenBackground` 必须与 Compose 开屏用的 `FlatBackground`
+           (#F5F7FA) **完全一致** —— 差一点就会在切换时看到一道色差。
+        ② `postSplashScreenTheme` 指回正式主题 —— 否则启动屏那套属性会一直留着
+           （比如窗口背景不再跟随）。
+    -->
+    <style name="Theme.YukiChuxue.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F5F7FA</item>
+        <!--
+          ⚠️ 2026-09-28（第二次修正）：图标改回**透明**。
+          v0.30.0 这里指向了 `@mipmap/ic_launcher`，用户立刻报了一个现象：
+          「有个非常模糊的正方形图片在居中位置，然后再显示原本的图片」。
+
+          根因：`ic_launcher` 是**普通 PNG**，没有 `mipmap-anydpi-v26` 自适应图标版本。
+          Android 12+ 的系统启动屏会把非自适应图标**放大**去填满 108dp 的容器 ——
+          PNG 一放大就是糊的，那块"模糊的正方形"就是它。之后 Compose 开屏画出
+          同一张图的**原始尺寸**（清晰），于是看起来像"糊一下再变清晰"。
+
+          修法：系统这层**什么都不画**，图标交给 Compose 开屏（它按 96dp 原尺寸绘制，
+          并做一次淡入）。这样既没有模糊方块，也仍然「开屏有软件图标」。
+        -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_blank</item>
+        <item name="postSplashScreenTheme">@style/Theme.YukiChuxue</item>
+    </style>
+</resources>

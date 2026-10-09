@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 直连 DeepSeek API，无代理层 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 网络感知重连（§14.3）：区分「断网」与「服务端拒绝」 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 开机后把「后台常驻」服务重新拉起来（v0.61.50）—— 不加它，重启即失效。 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 流式期间的前台服务保活（§14.4） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- 语音输入（说 → 文字 → 走原来的发送路径）。
+         ⚠️ 只用于**识别**：本 App 不录音、不存音频 —— 上游 DeepSeek 不收音频，
+         所以"语音消息"在这里没有消费方。
+         权限是可选的：拒绝它，语音钮会自己消失（而不是变成一个按不动的按钮）。 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- 应用内更新安装 APK（v0.50.0）。
+         ⚠️ 声明它**不等于**能静默安装：Android 仍然要求用户在系统设置里
+         单独为本应用打开「允许安装未知应用」。这个权限只是"允许发起安装"，
+         真正的开关在用户手上。
+         ⚠️ 不声明它的后果是**静默失败** —— startActivity(安装器) 什么都不发生、
+         也不报错，用户点「立即更新」后界面毫无反应，最难查的一类问题。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- ⚠️ Android 11+ 的包可见性声明：不写这个，`SpeechRecognizer.isRecognitionAvailable()`
+         会**恒为 false** —— 语音钮永远不出现，而且**不报任何错**。 -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".YukiApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.YukiChuxue">
+
+        <!-- 单 Activity，全 Compose -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.YukiChuxue.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 流式回复期间的常驻服务：让系统别在写到一半时冻结进程（§14.4）。
+             拿不到通知权限时它起不来，但流式照常跑，WAL 会兜住已收到的部分。 -->
+        <service
+            android:name=".service.StreamingForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- 「Ta 主动来找我」的后台常驻取件（v0.61.49）：
+             App 在后台时也去信箱看看有没有 Ta 想说的话。
+             ⚠️ 前台服务 = 用户会一直看到一条常驻通知（Android 硬性要求，藏不掉）。
+             ⚠️ Android 15 起 dataSync 类型有每日时限（约 6h/24h），超时被系统停 —— 那是预期内的降级。 -->
+        <service
+            android:name=".service.ProactiveWatchService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- 开机 / 应用更新后把常驻服务拉回来（v0.61.50）。
+             ⚠️ 真机若发现开机不自启，把 exported 改成 true 再试（系统广播在个别 ROM 上要求显式导出）。 -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="false"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- FileProvider：把私有目录里的一角以 content:// 临时暴露出去。
+             现在**只服务于更新包的安装** —— 下载器把 APK 写在 cacheDir/updates/，
+             安装时经它换成 content:// 交给系统安装器（见 file_paths.xml）。
+             ⚠️ 2026-09-30 用户要求全 App 删除相机入口（「全部删拍一张」）后，
+             原来给相机写的 cache/captures 已删除；这里也不再涉及相机，
+             故不需要声明 CAMERA 权限。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>

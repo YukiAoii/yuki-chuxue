@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  1x1 全透明 drawable —— 用于让系统启动屏**不画任何图标**。
+
+  重做后的开屏（v0.28.0）自带「飘雪 + 文字浮现」，不再使用 launcher 图标：
+  若系统那层仍然画一个居中图标，它会突兀地停在那，和雪与文字都不是一套。
+
+  代价：冷启动的头几帧没有 logo，先看到一片纯净背景。这是刻意的取舍。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+    <size android:width="1dp" android:height="1dp" />
+</shape>

@@ -1,0 +1,41 @@
+# ── Android 构建产物 ──
+android-native/build/
+android-native/app/build/
+android-native/.gradle/
+android-native/.kotlin/
+android-native/local.properties          # 含本机 Android SDK 路径，各人不同
+android-native/hs_err_pid*.log
+
+# ── Web 前端 ──
+app/node_modules/
+app/dist/
+app/android/                              # Capacitor 生成的原生工程
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── 运行时数据（绝不该进仓库）──
+backend/data/                             # SQLite 数据库：用户、会话、记忆
+backend/logs/
+*.db
+*.sqlite3
+*.log
+
+# ── 密钥与证书 ──
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+.env
+.env.*
+
+# ── 本地 / 临时 ──
+*.local
+*.bak
+*.bak-*
+.screenshots/
+*.apk

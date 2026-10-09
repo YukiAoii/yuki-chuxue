@@ -1,0 +1,12 @@
+{
+  "appId": "ai.yuki.chuxue",
+  "appName": "Yuki",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

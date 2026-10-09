@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 的暴露清单 —— 只开放「更新包」这一个子目录。
+
+  ⚠️ 这里只写 cache/updates，**不要**写成 path="."（那会把整个缓存目录
+  连同里面的其他临时文件一起暴露给任何拿到 URI 授权的应用）。
+
+  历史上这里还开过 `cache/captures`（相机临时照片）—— 2026-09-30 用户要求
+  **全 App 删除相机入口**（「全部删拍一张」）后，那个子目录已无消费者，随之删除。
+-->
+<paths>
+    <!--
+      更新的 APK（v0.50.0）。下载器把它写在 `cacheDir/updates/`，
+      安装时用 FileProvider 换成 content:// 交给系统安装器。
+
+      ⚠️ **只开这一个子目录** —— 别为了省事写成 path="."。
+      APK 是**可执行的安装包**，把它所在的整个缓存目录暴露出去，
+      比暴露一张照片严重得多。
+    -->
+    <cache-path name="updates" path="updates/" />
+</paths>

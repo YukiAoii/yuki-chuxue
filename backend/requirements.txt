@@ -1,0 +1,9 @@
+# Yuki 初雪 · 后端依赖
+#
+# 只有两项 —— 密码哈希用 hashlib、邮件用 smtplib、令牌用 secrets，
+# 都是标准库。不为一个自用后端再多背一份依赖。
+#
+# 安装（脚本会自动做，也可手动）：
+#   py -3 -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+fastapi>=0.110
+uvicorn>=0.27
