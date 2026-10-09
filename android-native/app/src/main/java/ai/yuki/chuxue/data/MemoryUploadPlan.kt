@@ -8,7 +8,7 @@ import ai.yuki.chuxue.data.room.MemoryEntity
  * 管两件事：**该传哪些**（口径）与**怎么分批**（性能）。两条都曾被写歪：
  * - **口径**：手动同步用不带 scope 过滤的全量查询 → **会话级记忆上云**（跨会话泄漏）。
  *   既有纪律是"只推人设级"（见 [MemoryCloud.push] 的 v0.61.38 修正），这条路径漏了同一道闸。
- * - **性能**：逐条串行 → N 条最坏 N×20s（每条走 `App → YukiServer → OB`，服务端过一次 LLM 压缩）。
+ * - **性能**：逐条串行 → N 条最坏 N×20s（每条走 `App → backend → OB`，服务端过一次 LLM 压缩）。
  */
 object MemoryUploadPlan {
 

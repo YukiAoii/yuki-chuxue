@@ -1,14 +1,14 @@
-"""把生产 YukiServer/main.py 里「仓库没有」的三块搬进仓库版（v0.58.0 部署前置）。
+"""把生产 backend/main.py 里「仓库没有」的三块搬进仓库版（v0.58.0 部署前置）。
 
 ## 为什么必须合并、不能覆盖
 线上后端**不是**仓库 backend/ 的旧副本 —— 它有仓库里没有的东西：
   · `user_blobs` 表 + `PersonaBlobIn` + `GET/PUT /api/v1/user/persona`（v0.52.0 人设端到端加密同步）
   · `POST /api/v1/user/avatar/upload`（用户侧头像上传）
-这些是在 YukiServer 那台机器上直接开发的，**从未回灌到仓库**。
+这些是在 backend 那台机器上直接开发的，**从未回灌到仓库**。
 
 反过来仓库有线上没有的：市场（4 表 + 7 接口）、免费分组、功能开关、`/api/v1/upload/image`、反馈。
 
-⚠️ 所以直接 `cp 仓库/main.py YukiServer/` 会把用户的人设同步功能**删掉** ——
+⚠️ 所以直接 `cp 仓库/main.py backend/` 会把用户的人设同步功能**删掉** ——
    用户手机上的人设就再也传不上去了。这个脚本做的是**合并**：
    以仓库版为底，把生产侧那三块按内容锚点插进去。
 
@@ -19,7 +19,7 @@ import os
 import sys
 
 REPO = r"C:\Users\<用户名>\Desktop\项目1\Yuki初雪\backend\main.py"
-PROD = r"C:\Users\<用户名>\Desktop\YukiServer\main.py"
+PROD = r"backend\main.py"
 
 
 def read(p):

@@ -157,7 +157,7 @@ class ContextCompressTest {
     fun `upTo 不能当切点 —— 老消息 createdAt 是 0，filter 会把它们静默丢掉`() {
         // 真机复现的形态：早期消息 createdAt=0（加该字段之前存下的），
         // 压缩时把 upTo 写成某个正数 → `filter { createdAt > upTo }` 把它们全丢掉。
-        // 用户看到的正是"输入只剩 5510 token、命中 512"（memory/progress.md 有记载）。
+        // 用户看到的正是"输入只剩 5510 token、命中 512"（项目改动记录 有记载）。
         val msgs = listOf(
             msg("user", "很老的一句"),                       // createdAt = 0
             msg("assistant", "很老的答"),                     // createdAt = 0

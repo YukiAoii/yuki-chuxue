@@ -57,7 +57,7 @@ node --env-file=xinchao.conf src\server.js
 
 ## 四、AI 模型通道（2026-10-05 已接通）
 
-已从 YukiServer 的「免费组」配置（settings 表 `free_group`，名称「Yuki初雪Pro」）取 key 接入
+已从 backend 的「免费组」配置（settings 表 `free_group`，名称「Yuki初雪Pro」）取 key 接入
 （key 不落在本文件，落在 `start_ob.bat` 与 `xinchao.conf` 里）：
 
 - **OB 压缩通道**：`start_ob.bat` 的 `OMBRE_COMPRESS_*`（base_url=https://api.your-llm-provider.example.com:18443/v1，model=deepseek-flash）
@@ -141,7 +141,7 @@ node --env-file=xinchao.conf src\server.js
 
 ## 四、AI 模型通道（2026-10-05 已接通）
 
-已从 YukiServer 的「免费组」配置（settings 表 `free_group`，名称「Yuki初雪Pro」）取 key 接入
+已从 backend 的「免费组」配置（settings 表 `free_group`，名称「Yuki初雪Pro」）取 key 接入
 （key 不落在本文件，落在 `start_ob.bat` 与 `xinchao.conf` 里）：
 
 - **OB 压缩通道**：`start_ob.bat` 的 `OMBRE_COMPRESS_*`（base_url=https://api.your-llm-provider.example.com:18443/v1，model=deepseek-flash）
@@ -223,7 +223,7 @@ curl -s -H "Authorization: Bearer <SERVICE_TOKEN>" http://127.0.0.1:18110/v1/now
 - AI 通道：免费通道（your-llm-provider）chat 200 ✓；embeddings 404（维持关键词降级）
 - **多状态（C-2，2026-10-05 深夜实测）**：`X-Persona-Id: testp1` 独立桶（revision 0→2→4 独立推进）、
   testp2 独立（0）、**default 不受影响**（15→17→18）；`/v1/settle` 按桶隔离；非法 personaId → 400 ✓；
-  心潮自带测试 `npm test` **173/173** ✓；YukiServer 代理链路 `/xinchao/health` 正常 ✓。
+  心潮自带测试 `npm test` **173/173** ✓；backend 代理链路 `/xinchao/health` 正常 ✓。
   （测试桶 `data/xinchao/testp1|testp2` 保留待后续联调，收尾时清理。）
 - **OB 侧多桶（2026-10-05 深夜实测）**：hold 带 `X-Persona-Id: testp1` → 记忆落 `data/ob/testp1/`
   （default 零污染）；breath 精确 token——testp1 命中 / default 不命中 ✓；非法 personaId → 400 ✓；
@@ -235,7 +235,7 @@ curl -s -H "Authorization: Bearer <SERVICE_TOKEN>" http://127.0.0.1:18110/v1/now
 
 - [x] 开机自启：**已注册**——计划任务 `XinchaoServices`（ONSTART、SYSTEM、管理员注册），
       动作是 `C:\Xinchao\start_all.bat`（幂等：按端口杀旧实例再拉起两个服务；手动 `schtasks /run` 即重启）。
-- [x] 多租户改造（单实例多状态）——**已完成 2026-10-05 深夜**：心潮/OB 双侧多桶 + YukiServer 归属校验（见交接文档「续 5 / 续 6」）
+- [x] 多租户改造（单实例多状态）——**已完成 2026-10-05 深夜**：心潮/OB 双侧多桶 + backend 归属校验（见交接文档「续 5 / 续 6」）
 - [x] 用户侧看板（玻璃拟态）——**已完成 2026-10-06**：`https://sy.example.com:11445/me/`（见第十节）
 - [ ] App 内人设状态页 + 人设开关（Wave 4；服务端接口已全部就绪）
 
@@ -274,7 +274,7 @@ curl -s -H "Authorization: Bearer <SERVICE_TOKEN>" http://127.0.0.1:18110/v1/now
 ⚠️ 心潮本体没有自带网页（它的可视化在第三方平台 xinchaomind.uk）；OB（记忆大脑）**自带**看板（11447），
 可查看记忆桶 / 记忆网络 / 日志 / 设置 —— **运营者维护工具，不要发给用户**。
 
-### nginx 配置重载（改 `C:\nginx\conf\wgbh.conf` 后）
+### nginx 配置重载（改 `C:\nginx\conf\nginx.conf` 后）
 
 nginx 以 SYSTEM 身份由计划任务 `Yuki-Nginx` 开机拉起，**普通管理员权限发不了 reload 信号**（Access denied）。
 正确姿势：运行计划任务 `Yuki-Nginx-Reload`（SYSTEM、手动触发，动作 = `C:\nginx\reload.bat`）：
@@ -285,12 +285,12 @@ schtasks /run /tn "Yuki-Nginx-Reload"     # Git Bash 里前面加 MSYS_NO_PATHCO
 
 `reload.bat` 先 `cd /d C:\nginx` —— nginx -s 找 `logs\nginx.pid` 依赖工作目录；计划任务默认工作目录是
 system32，**直接跑 `nginx -s reload` 会静默失败**（2026-10-06 踩过：任务「成功」但配置没重载）。
-改配置流程：**改 wgbh.conf → `nginx -t` 验证 → `schtasks /run /tn "Yuki-Nginx-Reload"` → 端口验证**。
-备份习惯：改前 `cp wgbh.conf wgbh.conf.bak-<日期>-<用途>`。
+改配置流程：**改 nginx.conf → `nginx -t` 验证 → `schtasks /run /tn "Yuki-Nginx-Reload"` → 端口验证**。
+备份习惯：改前 `cp nginx.conf nginx.conf.bak-<日期>-<用途>`。
 
 ### 端口与上游映射（2026-10-06 补记）
 
-本机 nginx 监听：`80/443`（主站）、`11445`（YukiServer）、`11447`（OB 看板）、`11448`（OB 本机测试口，仅 127.0.0.1）。
+本机 nginx 监听：`80/443`（主站）、`11445`（backend）、`11447`（OB 看板）、`11448`（OB 本机测试口，仅 127.0.0.1）。
 **外网可达性 = 本机监听 × 上游端口映射**（公网 <你的服务器IP> → <内网IP> 的映射在网关侧，服务器上改不到）：
 开新端口时**两层都要做**，漏了上游那层就是「本机通、外网不通」（11447 首测即此症状，用户在上游开映射后即通）。
 Windows 防火墙目前三档全关（不是拦截因素）。
@@ -363,7 +363,7 @@ Windows 防火墙目前三档全关（不是拦截因素）。
 | `xinchao/src/server.js` | 新增 `barkActive = enabled \|\| captureEnabled`，替换 4 处生成阀门（dream_pending / dream push / autonomous / daytime） |
 | `xinchao.conf` | `BARK_CAPTURE_ENABLED=true`（常开）；防打扰门槛**保持默认** `BARK_MIN_CONTACT_IDLE_HOURS=12` / `BARK_MIN_DRIVE=0.42` |
 
-### YukiServer 改动
+### backend 改动
 `GET /xinchao/personas/{id}/pending?since=` —— 归属校验 → 读心潮 `/v1/state` 的 `recentBarkMessages`（引擎自记）→ 只回 `{at,kind,message}`。
 ⚠️ 该端点**不做任何调度判断**（"多久查一次"是 App 的取件心跳，不参与"要不要说"）。
 

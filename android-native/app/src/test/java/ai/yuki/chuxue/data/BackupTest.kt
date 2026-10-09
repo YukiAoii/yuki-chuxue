@@ -98,7 +98,7 @@ class BackupTest {
                 scrimAlpha = 0.72f,
                 scrimStyle = "liquid",
                 // ⚠️ v0.51.0 新增字段必须用**非默认值**参与往返 ——
-                //    本项目栽过"缺失==缺失照样绿"的假绿（见 HANDOFF 坑 #5）：
+                //    本项目栽过"缺失==缺失照样绿"的假绿（见 项目交接记录 坑 #5）：
                 //    若两边都不设，断言会通过，而真实用户的值其实在备份里丢了。
                 providerGroupId = "grp-9",
                 model = "qwen-max",

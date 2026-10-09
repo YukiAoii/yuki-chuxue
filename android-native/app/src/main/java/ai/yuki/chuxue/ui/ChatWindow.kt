@@ -16,7 +16,7 @@ import ai.yuki.chuxue.data.ChatMessage
  * 模型只会看到最近 50 条，前面聊过的一概不认，而且**不报错**。
  *
  * ## 为什么不用 androidx.paging
- * 项目一贯不引文档示例里的重依赖（HANDOFF 里记着：文档假设了 Hilt / WorkManager / Coil
+ * 项目一贯不引文档示例里的重依赖（项目交接记录 里记着：文档假设了 Hilt / WorkManager / Coil
  * 这些本项目没有的东西）。而这里的诉求只是"滑到顶部再放一批" ——
  * 一个窗口计数 + 一次切片就够了，用不上 `Pager` / `RemoteMediator` 那一整套。
  */

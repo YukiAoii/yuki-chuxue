@@ -3232,7 +3232,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         MemoryExtractionScheduler.setFrontendStreaming(true)
         streamJob = viewModelScope.launch {
             // ① 检索与这句话相关的长期记忆（文档 §7.5 的「检索式」分层）。
-            //    结果只会进**附录**，不碰冻结前缀与历史 —— 见 memory/architecture.md。
+            //    结果只会进**附录**，不碰冻结前缀与历史 —— 见 架构红线文档。
             //    检索失败不阻断对话：记忆是增强，不是前提。
             //
             // ⚠️ v0.61.54：记忆**彻底分轨** —— 附录的记忆源按人设的记忆方式切换：

@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit
  *
  * ⚠️ [sent] 是**唯一**能决定"要不要开始读秒"的东西。
  * 后端的 2xx **不等于**邮件发出去了 —— 邮件服务没配时它会回 `ok:true` 而 `sent:false`
- * （见 `YukiServer/main.py` 的 `_send_code`）。
+ * （见 `backend/main.py` 的 `_send_code`）。
  *
  * 之前这个布尔被压成了一句中文，界面于是只能按"HTTP 200 就算成功"处理，
  * 倒计时照走 —— 用户 2026-10-05 报的正是这个：**点了、邮件没来，按钮却在读秒**。

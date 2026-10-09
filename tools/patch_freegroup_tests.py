@@ -6,7 +6,7 @@
 import io
 import os
 
-BASE = r"C:\yuki-native\app\src\test\java\ai\yuki\chuxue\data"
+BASE = r"<构建目录>\app\src\test\java\ai\yuki\chuxue\data"
 
 HELPER = '''
 /** 测试里少打几个字：明确可用的那一种状态。 */

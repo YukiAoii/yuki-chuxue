@@ -13,8 +13,8 @@ import urllib.error
 import urllib.request
 
 BASE = "https://sy.example.com:11445"
-APK_SRC = r"C:\yuki-native\app\build\outputs\apk\debug\app-debug.apk"
-APK_DST = r"C:\Users\<用户名>\Desktop\YukiServer\static\d\yuki-83.apk"
+APK_SRC = r"<构建目录>\app\build\outputs\apk\debug\app-debug.apk"
+APK_DST = r"backend\static\d\yuki-83.apk"
 APK_URL = "/d/yuki-83.apk"
 CODE, NAME = 83, "0.58.0"
 

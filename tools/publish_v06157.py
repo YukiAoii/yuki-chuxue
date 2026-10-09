@@ -23,7 +23,7 @@
 
 ⚠️ 若手写一个不带指纹的 `apk_url`（如 `/d/yuki-143.apk`），`apk_serve_state()`
 （`main.py:1786`）会判「还没有上传安装包」→ `/api/app/version` 返回 `latest:null`、
-`blocked:true`，**版本不生效**（本轮真实踩过，详见 `memory/progress.md` 的「必读」段）。
+`blocked:true`，**版本不生效**（本轮真实踩过，详见 `项目改动记录` 的「必读」段）。
 """
 import hashlib
 import json
@@ -35,7 +35,7 @@ import urllib.request
 BASE = "https://sy.example.com:11445"
 REPO = r"C:\Users\<用户名>\Desktop\项目1\Yuki初雪"
 APK_SRC = REPO + r"\Yuki初雪_v0.61.57_debug.apk"
-APK_DST = r"C:\Users\<用户名>\Desktop\YukiServer\static\d\yuki-143.apk"
+APK_DST = r"backend\static\d\yuki-143.apk"
 # ⚠️ 留空：apk_url 由上传接口（②）回填带指纹的地址，**不要手写**。见文件头说明。
 APK_URL = ""
 CODE, NAME = 143, "0.61.57"

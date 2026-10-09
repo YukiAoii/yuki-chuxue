@@ -21,7 +21,7 @@ android {
         // ⚠️ 改这个值要同时确认三件事，缺一个 App 就会在启动时报"连不上服务器"：
         //     ① Nginx 里有对应的 server 块（当前是 listen 11445 ssl）
         //     ② 云服务器安全组 + 本机防火墙已放行该端口
-        //     ③ 后端确实在跑（桌面\YukiServer\start_backend.bat）
+        //     ③ 后端确实在跑（backend\start_backend.bat）
         buildConfigField("String", "SERVER_BASE_URL", "\"https://your-server.example.com\"")
     }
 

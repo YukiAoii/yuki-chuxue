@@ -14,7 +14,7 @@ import androidx.room.PrimaryKey
  * 第二层 personaId  所有记忆查询强制带
  * 第三层 scope      persona 级跨会话共享 / session 级仅本会话可见
  * ```
- * ⚠️ 2026-10-06 更正：本项目**已有完整账号体系**（`YukiServer` 的注册/登录/令牌，
+ * ⚠️ 2026-10-06 更正：本项目**已有完整账号体系**（`backend` 的注册/登录/令牌，
  * 见 `backend/main.py` 的 `/auth/…` 一组接口）。但**记忆库本身仍是纯本地、按设备** ——
  * 第一层 `userId` 目前恒为 [LOCAL_USER_ID]（"local"）。保留这一层不是为了"以后可能
  * 多用户"，而是因为**隔离规则必须在数据模型上写死**：查询一旦漏带某个维度，

@@ -17,7 +17,7 @@ from PIL import Image
 import os
 
 SRC = r"C:\Users\<用户名>\Desktop\项目1\Yuki初雪"
-RES = r"C:\yuki-native\app\src\main\res"
+RES = r"<构建目录>\app\src\main\res"
 
 
 def square(im):

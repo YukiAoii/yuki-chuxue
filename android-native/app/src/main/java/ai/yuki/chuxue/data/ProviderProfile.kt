@@ -67,7 +67,7 @@ object CachedTokenField {
  *
  * | 来源 | 可信度 |
  * |---|---|
- * | DeepSeek 那行 | **本项目实测** —— `CacheMath.BLOCK = 128`，有 7 组真机数据吻合（见 HANDOFF） |
+ * | DeepSeek 那行 | **本项目实测** —— `CacheMath.BLOCK = 128`，有 7 组真机数据吻合（见 项目交接记录） |
  * | 其余各家 | **配置表，不是实测** —— 抄自 Tianshu 的 `provider-profile.ts` |
  *
  * ⚠️ 顺带记一处**两个项目的结论相反**：Tianshu 的 profile 表写 DeepSeek 粒度 **64**，

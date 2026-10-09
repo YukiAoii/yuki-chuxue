@@ -18,7 +18,7 @@
 import io
 import os
 
-P = r"C:\yuki-native\app\src\main\java\ai\yuki\chuxue\data\Backup.kt"
+P = r"<构建目录>\app\src\main\java\ai\yuki\chuxue\data\Backup.kt"
 
 raw = io.open(P, "rb").read().decode("utf-8")
 nl = "\r\n" if "\r\n" in raw else "\n"

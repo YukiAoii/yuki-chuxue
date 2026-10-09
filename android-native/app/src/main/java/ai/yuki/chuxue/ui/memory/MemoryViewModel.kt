@@ -327,7 +327,7 @@ class MemoryViewModel(app: Application) : AndroidViewModel(app) {
      * 1. **只传人设级**：原来取 `allOfPersona`（不带 scope 过滤）→ **会话级记忆也被推上云**，
      *    与 [MemoryCloud.push] 只推人设级的口径相悖（跨会话泄漏）。过滤收在
      *    [MemoryUploadPlan.uploadableOf]（纯函数、有测试）。
-     * 2. **分批并发**：原来逐条串行，每条走 `App → YukiServer → OB`（服务端过一次 LLM 压缩），
+     * 2. **分批并发**：原来逐条串行，每条走 `App → backend → OB`（服务端过一次 LLM 压缩），
      *    客户端 readTimeout 20s → N 条最坏 N×20s。现在每批 3 条并发、批间串行，
      *    并把 **k/N 进度**吐给界面（原来只有一句静态文案，看起来像卡死）。
      */

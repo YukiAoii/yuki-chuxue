@@ -9,7 +9,7 @@ import org.junit.Test
  * 「发验证码到底成没成」的解析规格。
  *
  * ## 它修的是什么
- * 后端**本来就分得清**三种结局（见 `YukiServer/main.py` 的 `_send_code`）：
+ * 后端**本来就分得清**三种结局（见 `backend/main.py` 的 `_send_code`）：
  * ```
  * {"ok":true,  "sent":true,  "degraded":false}                    ← 真发出去了
  * {"ok":true,  "sent":false, "degraded":true,  "message":"邮件服务尚未配置…"}

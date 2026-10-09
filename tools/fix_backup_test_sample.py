@@ -10,7 +10,7 @@
 """
 import io
 
-P = r"C:\yuki-native\app\src\test\java\ai\yuki\chuxue\data\BackupTest.kt"
+P = r"<构建目录>\app\src\test\java\ai\yuki\chuxue\data\BackupTest.kt"
 
 raw = io.open(P, "rb").read().decode("utf-8")
 nl = "\r\n" if "\r\n" in raw else "\n"

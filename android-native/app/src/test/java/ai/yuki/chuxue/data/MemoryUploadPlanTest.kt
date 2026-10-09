@@ -15,7 +15,7 @@ import org.junit.Test
  * 手动同步这条路径漏了同一道过滤，成了那条纪律的第一个破口。
  *
  * ## 另一个问题：串行
- * 原实现 `for (m in rows) { write(...) }` 逐条串行，每条走 `App → YukiServer → OB`（服务端过一次
+ * 原实现 `for (m in rows) { write(...) }` 逐条串行，每条走 `App → backend → OB`（服务端过一次
  * LLM 压缩），客户端 readTimeout 20s —— N 条最坏 N×20s。分批 + 有限并发把墙钟压到 ~N/并发。
  */
 class MemoryUploadPlanTest {

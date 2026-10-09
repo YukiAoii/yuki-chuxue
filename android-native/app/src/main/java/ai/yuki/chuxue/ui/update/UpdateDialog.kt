@@ -237,7 +237,7 @@ fun UpdateDialog(
  * 一起加，属独立决定。
  *
  * ⚠️ 按**行**渲染，不解析 Markdown —— Compose 的 `Text` 不解析 Markdown
- * （本项目为此修过 5 处，见 `HANDOFF.md` 坑 #13）。发布方写的 `- 第一条`
+ * （本项目为此修过 5 处，见 `项目交接记录` 坑 #13）。发布方写的 `- 第一条`
  * 会原样显示，这是**预期**行为，不是漏了渲染。
  */
 @Composable
@@ -312,7 +312,7 @@ private fun ReleaseNotes(release: RemoteRelease, showForceHint: Boolean) {
  * 成功徽章：圆形绿渐变底 + 白色对勾（Canvas 自绘）。
  *
  * ## 为什么自绘
- * 本项目 `YukiIcons` 的图标是**白名单**（见 `HANDOFF.md` 第八条：只有
+ * 本项目 `YukiIcons` 的图标是**白名单**（见 `项目交接记录` 第八条：只有
  * AccountCircle / Add / Back / … / Warning 这些，**没有对勾**）。
  * 硬塞一个不存在的图标名会编译不过；而两笔画出来的对勾比引入图标库可控得多。
  *

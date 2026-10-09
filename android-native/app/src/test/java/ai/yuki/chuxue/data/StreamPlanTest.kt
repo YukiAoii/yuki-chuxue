@@ -5,7 +5,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
- * 流式开关对请求体的影响面（开发文档 §9；`memory/architecture.md` 的三条铁律）。
+ * 流式开关对请求体的影响面（开发文档 §9；`架构红线文档` 的三条铁律）。
  *
  * 核心断言：**`stream` 只改一个字段，messages 的字节完全不动。**
  *

@@ -255,7 +255,7 @@ FREE_GROUP_API_KEY=sk-...
 | **MemMe** | https://github.com/vibeinging/MemMe | Apache-2.0 | 记忆系统架构评估参考 |
 | **androidx-splashscreen-compose** | https://github.com/kibotu/androidx-splashscreen-compose | Apache-2.0 | 启动屏与开屏动画交互 |
 | **xinchao-runtime-bridge** | https://github.com/tianyupaipai-cmd/xinchao-runtime-bridge | MIT | 心潮运行时桥接 |
-| **心潮 · 念** | 上游为「心潮念（Xinchao · Nian）」 | MIT | 心潮引擎（本仓库 `xinchao/` 基于它修改） |
+| **心潮 · 念** | https://github.com/tianyupaipai-cmd/xinchao-nian | MIT | 心潮引擎（本仓库 `xinchao/` 基于它修改） |
 
 各项目的版权声明、借鉴范围与本仓库的改动说明见 **NOTICE.md**。
 

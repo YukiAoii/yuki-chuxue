@@ -4,7 +4,7 @@ setlocal EnableDelayedExpansion
 title Yuki 初雪 - 后端一键启动
 
 REM =========================================================================
-REM  YukiServer backend launcher v4
+REM  backend backend launcher v4
 REM  Full story: see README-运维.md   (keep this file's REM lines ASCII/short:
 REM  cmd.exe mis-parses long non-ASCII REM lines in a UTF-8 .bat)
 REM =========================================================================

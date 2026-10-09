@@ -114,7 +114,7 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
  * 一条版本记录 —— **一张卡**：版本徽章 + 标题 + 日期 → 正文。
  *
  * ⚠️ 正文按**行**渲染，不解析 Markdown（Compose 的 `Text` 不解析 Markdown，
- * 本项目为此修过 5 处，见 `HANDOFF.md` 坑 #13）。
+ * 本项目为此修过 5 处，见 `项目交接记录` 坑 #13）。
  * 发布方写的 `- 第一条` 会原样显示，这是**预期**行为。
  */
 @Composable

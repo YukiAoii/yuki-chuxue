@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
  * 它只需要问一句「这一轮该带上哪些记忆」，得到的是可以直接交给
  * `PromptEngine.plan(memories = …)` 的字符串列表。
  *
- * ## 记忆**只走附录**（架构铁律，`memory/architecture.md`）
+ * ## 记忆**只走附录**（架构铁律，`架构红线文档`）
  * [appendixLines] 的返回值唯一的合法去处是 `PromptEngine.plan(memories = …)` ——
  * 它最终渲染进**用户消息体里的 `<appendix>` 块**（前缀末端）。
  * **绝不能**把它拼进冻结前缀或历史：那会让该会话的缓存从拼接点起全部失效，

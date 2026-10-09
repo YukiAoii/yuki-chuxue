@@ -12,10 +12,10 @@ import os
 import sys
 
 FILES = [
-    r"C:\yuki-native\app\src\main\java\ai\yuki\chuxue\ui\market\MarketScreen.kt",
-    r"C:\yuki-native\app\src\main\java\ai\yuki\chuxue\ui\market\MarketDetailScreen.kt",
-    r"C:\yuki-native\app\src\main\java\ai\yuki\chuxue\ui\market\PersonaPickSheet.kt",
-    r"C:\yuki-native\app\src\main\java\ai\yuki\chuxue\ui\persona\PersonaDetailScreen.kt",
+    r"<构建目录>\app\src\main\java\ai\yuki\chuxue\ui\market\MarketScreen.kt",
+    r"<构建目录>\app\src\main\java\ai\yuki\chuxue\ui\market\MarketDetailScreen.kt",
+    r"<构建目录>\app\src\main\java\ai\yuki\chuxue\ui\market\PersonaPickSheet.kt",
+    r"<构建目录>\app\src\main\java\ai\yuki\chuxue\ui\persona\PersonaDetailScreen.kt",
 ]
 
 # 一旦出现这些词，说明「他」是构词成分，不能整字替换

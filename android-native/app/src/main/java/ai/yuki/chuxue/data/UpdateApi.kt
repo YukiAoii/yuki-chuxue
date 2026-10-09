@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
  * ⚠️ 上面这几行**不能写成带星号的通配路径**（如 `/api/admin/` 后跟 `*`）：
  * Kotlin 的块注释**会嵌套**，注释里出现「斜杠 + 星号」会开启一层嵌套注释
  * 并吃掉 KDoc 的结束符，报 `Unclosed comment`。
- * 本项目在别处已经踩过两次（见 `HANDOFF.md` 坑 #14），这是第三次。
+ * 本项目在别处已经踩过两次（见 `项目交接记录` 坑 #14），这是第三次。
  */
 object UpdateApi {
 

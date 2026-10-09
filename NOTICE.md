@@ -66,13 +66,19 @@ Yuki 初雪 在设计与实现上参考了以下开源项目。
 
 ### 心潮 · Xinchao（`xinchao/`）
 
-- **上游**：心潮念（Xinchao · Nian）的 `xinchao/` 模块
-- **许可证**：MIT License —— Copyright (c) 2026 派派
+- **上游仓库**：https://github.com/tianyupaipai-cmd/xinchao-nian
+- **上游许可结构**：该仓库是**多部分混合许可** —— `xinchao/` 目录为 MIT、
+  `ombre-brain/` 目录为衍生版（含非商业约束）、整体另有限制条款。
+- **本仓库采用的部分**：**仅 `xinchao/` 子目录** —— MIT License，Copyright (c) 2026 派派
 - **本仓库对其所做的修改**（为接入本项目的**人设隔离**而适配）：
   - 新增 `src/persona-context.js`（按 personaId 隔离状态与上下文）
   - 修改 `src/server.js`、`src/engine.js`、`src/config.js`、
     `src/context-envelope.js`、`src/ombre-client.js`、`src/bark-client.js`
 - 上游 `LICENSE` 原样保留于 `xinchao/LICENSE`。
+
+> ⚠️ **本仓库未采用** `xinchao-nian` 中受非商业条款约束的部分。
+> 本仓库的 `ombre-brain/` 取自 **P0luz/Ombre-Brain 原版（纯 MIT，允许商用）**，
+> 而非 `xinchao-nian` 内的衍生版本 —— 两者许可不同，请勿混淆。
 
 ### Ombre Brain（`ombre-brain/`）
 

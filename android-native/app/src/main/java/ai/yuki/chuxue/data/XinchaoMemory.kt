@@ -17,7 +17,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
 /**
- * 「云端记忆」—— App 与**记忆大脑 OB**（经 YukiServer 代理）之间的读写（v0.61.36）。
+ * 「云端记忆」—— App 与**记忆大脑 OB**（经 backend 代理）之间的读写（v0.61.36）。
  *
  * ## 它补的是什么
  * App 本机记忆（Room）是"简单检索"（关键词、无向量）；而云端 OB 才是完整的长期记忆
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
  * 3. **鉴权用登录态 token**（未登录时服务器 401，静默失败）。
  *
  * ## 归属/隐私边界（服务器侧保证，App 侧只管带 token）
- * YukiServer 按 persona 归属校验（非本人 404），并把请求带 `X-Persona-Id` 转发到 OB 该人设的桶。
+ * backend 按 persona 归属校验（非本人 404），并把请求带 `X-Persona-Id` 转发到 OB 该人设的桶。
  * ⚠️ **进 OB 的记忆在服务器上是明文的**（OB 要用它做语义检索/做梦，做不到端到端加密）——
  *    这与"人设快照是 E2E 密文"是两种级别，界面文案不能含糊。
  */
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
  * 云端记忆里的一条（v0.61.37）—— 供「云端记忆」页按**域**分组渲染。
  *
  * 与 [XinchaoMemoryApi.fetchText] 的纯文本不同：这是**结构化**的一条，
- * 来自 OB 的桶文件（经 YukiServer 解析），带域/标题/重要性/时间。
+ * 来自 OB 的桶文件（经 backend 解析），带域/标题/重要性/时间。
  */
 data class XinchaoBucket(
     val id: String,

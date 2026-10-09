@@ -1600,7 +1600,7 @@ const server = createServer(async (request, response) => {
 });
 
 // 【Yuki 接入 · 部署适配改动（非上游代码）】默认绑 0.0.0.0 保持不变；
-// 裸跑部署可用环境变量 HOST=127.0.0.1 收窄到回环（只允许本机 YukiServer 访问）。
+// 裸跑部署可用环境变量 HOST=127.0.0.1 收窄到回环（只允许本机 backend 访问）。
 // 详见 C:/Xinchao/README-部署.md 的「对第三方代码的改动清单」。
 server.listen(config.port, process.env.HOST || '0.0.0.0', async () => {
   // 【Yuki 接入 · 部署适配改动（非上游代码）】C-2：启动期走 default 桶（下方历史迁移只针对 default 存量）；
