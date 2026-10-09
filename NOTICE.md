@@ -60,6 +60,33 @@ Yuki 初雪 在设计与实现上参考了以下开源项目。
 - 未使用其商标
 - 未声称任何形式的担保
 
+## 随本仓库一起分发的第三方组件
+
+下面两个组件**包含源代码**（不只是借鉴思路），各自保留原有许可证。
+
+### 心潮 · Xinchao（`xinchao/`）
+
+- **上游**：心潮念（Xinchao · Nian）的 `xinchao/` 模块
+- **许可证**：MIT License —— Copyright (c) 2026 派派
+- **本仓库对其所做的修改**（为接入本项目的**人设隔离**而适配）：
+  - 新增 `src/persona-context.js`（按 personaId 隔离状态与上下文）
+  - 修改 `src/server.js`、`src/engine.js`、`src/config.js`、
+    `src/context-envelope.js`、`src/ombre-client.js`、`src/bark-client.js`
+- 上游 `LICENSE` 原样保留于 `xinchao/LICENSE`。
+
+### Ombre Brain（`ombre-brain/`）
+
+- **上游**：P0luz/Ombre-Brain —— 原始 MIT，Copyright (c) 2026 P0lar1zzZ
+- **许可证**：MIT License
+- **本仓库对其所做的修改**：记忆写入流程的**异步化**改造
+  （`src/tools/hold/core.py`：正文先落盘、打标转后台补回），以适配本项目的云端记忆。
+- 上游 `LICENSE`、`NOTICE.md`、`AUTHORS.md` 原样保留于 `ombre-brain/`。
+
+> 依两个上游 `NOTICE` 的请求，此处保留对原作者与开发组的署名，并说明本仓库的改动。
+> 二者均为 **MIT**，**允许商用、修改与再分发**，唯一硬性要求是保留版权声明。
+
+---
+
 ## 本项目自身的许可
 
 本项目以 **Apache License 2.0** 分发，完整条款见 LICENSE。

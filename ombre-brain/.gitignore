@@ -1,0 +1,90 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# OS / 工具产生的杂物（曾被误提交，2026-06 清理）
+.DS_Store
+.coverage
+.coverage.*
+config.yaml.dir/
+.env
+.venv/
+.venv*/
+venv/
+# .claude/ 是 Claude Code 客户端本地配置，整体不上传；但把 breath hook 脚本
+# 作为官方产物放行给用户（Docker/纯 Python 用户都能从仓库拿到并按 README 装）。
+.claude/*
+!.claude/hooks/
+.claude/hooks/*
+!.claude/hooks/session_breath.py
+.vscode/
+config.yaml
+buckets/
+test_buckets/
+*.log
+server.log
+plan.md
+scarp_paper
+backup_*/
+*.db
+import_state.json
+data/
+
+# 内部沟通 / 设计稿 / 复盘 / 迭代 spec —— 不上传
+# Internal design docs, reflections, iteration specs — local only
+docs/internal/
+docs/secret/
+docs/secrets/
+docs/superpowers/
+docs/CODE_HEALTH_AUDIT_*.md
+docs/TODO_*.md
+docs/V2.4.0_*.md
+
+# 本地测试脚手架 —— 不上传（需要时本地维护）
+tests/integration/
+tests/regression/
+tests/unit/
+# 注意：仓库根的 tools/ 是正经源码目录（诊断契约与 pytest 依赖其中的脚本，
+# 如 tools/vnext_preflight.py），必须能被 git 跟踪。曾经这里有一条 /tools/ 整目录
+# 忽略，导致新增脚本 git add 时被静默吞掉、本地 pytest 绿但推上去缺文件。已移除。
+
+rule.md
+models/
+test_analyze.py
+test_flow.py
+
+# 一次性诊断 / 部署脚本 —— 本地用，不上传
+tmp/
+diag*.py
+fix_key.py
+check_cfg.py
+start_stdio.sh
+
+# Ollama 模型权重 —— 体积大，不上传
+ollama/
+
+# 本地设计预览稿（非应用文件）
+frontend/dashboard-preview.html
+
+# Rust shadow-kernel build output. ombre-kernel is currently a library crate,
+# so its generated Cargo.lock is not a release lockfile.
+kernel/rust/**/target/
+kernel/rust/ombre-kernel/Cargo.lock
+.tmp/ombre-nodes-v2.yaml
+.tmp/
+
+# Local test protocols and generated smoke outputs — never publish.
+tmp_pas_docs_*/
+tmp_hnf1_pas_pair_smoke_*/
+
+# Kilo Code 的工作目录，含它自己开的 git worktree（整份代码的副本）。
+# git 本来就会跳过注册过的 worktree，ripgrep / ruff / pytest 实测也扫不到；
+# 写在这里是为了覆盖将来任何遵守 gitignore 的工具，并把「这不是本仓库的代码」
+# 这件事写明——按文件系统硬遍历的 grep -r / find 仍然会看到两份，
+# 分析脚本得自己排除。
+.kilo/
+
+# 覆盖率产物（CI 每次重新生成）
+coverage.xml
+.coverage
+htmlcov/

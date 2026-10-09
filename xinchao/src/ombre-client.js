@@ -1,0 +1,756 @@
+// 【记忆（OB）】和 Ombre Brain 记忆服务打交道：拉浮现的记忆、写回、解析记忆桶。部署时 OB 要先起来。
+// 代码地图见 src/README.md。
+
+import { SYSTEM_VERSION } from './version.js';
+// 【多状态（C-2）】把当前请求的 persona 传给 OB（OB 侧按 X-Persona-Id 分数据桶）。
+import { currentPersonaId } from './persona-context.js';
+
+// 梦不吃技术：这些域的记忆不进梦的原料（机房梦就是这么来的）
+const DREAM_EXCLUDE_DOMAINS = new Set(['技术', '数字', '编程', '事务']);
+
+export class OmbreClient {
+  constructor(config) {
+    this.config = config;
+    this.sessionId = null;
+    this.initializePromise = null;
+  }
+
+  async post(payload, expectBody = true, timeoutMs = 15000) {
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+      'X-Ombre-Caller': 'dynamic-mind',
+    };
+    if (this.config.token) headers.Authorization = `Bearer ${this.config.token}`;
+    // 【多状态（C-2）】当前 persona 透传给 OB（缺省 default 时省略——与改动前行为一致）。
+    const pid = currentPersonaId();
+    if (pid && pid !== 'default') headers['X-Persona-Id'] = pid;
+    if (this.sessionId) headers['Mcp-Session-Id'] = this.sessionId;
+    const response = await fetch(this.config.url, {
+      method: 'POST', headers,
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!response.ok) throw new Error(`Ombre MCP failed: HTTP ${response.status}`);
+    this.sessionId = response.headers.get('mcp-session-id') ?? this.sessionId;
+    if (!expectBody) return null;
+    const text = await response.text();
+    return text ? parseMcp(text) : null;
+  }
+
+  async initialize() {
+    if (this.sessionId || this.stateless) return;
+    if (!this.initializePromise) {
+      this.initializePromise = (async () => {
+        await this.post({
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {},
+            clientInfo: { name: 'xinchao-dynamic-mind', version: SYSTEM_VERSION },
+          },
+        });
+        // OB 2.8.5+ 的 Streamable HTTP 是无状态 JSON 响应，不发 Mcp-Session-Id；没有就按无状态走，不当错误。
+        this.stateless = !this.sessionId;
+        await this.post({ jsonrpc: '2.0', method: 'notifications/initialized' }, false);
+      })().finally(() => { this.initializePromise = null; });
+    }
+    return this.initializePromise;
+  }
+
+  async call(name, args = {}, timeoutMs = 15000) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await this.initialize();
+      try {
+        return await this.post({ jsonrpc: '2.0', id: Date.now(), method: 'tools/call', params: { name, arguments: args } }, true, timeoutMs);
+      } catch (error) {
+        if (attempt || !/HTTP (400|401|404)/.test(error.message)) throw error;
+        this.sessionId = null;
+        this.stateless = false;
+      }
+    }
+    throw new Error('Ombre MCP call failed after session refresh');
+  }
+
+  // 网关用：拉 OB 的 tools/list（供心潮念合并暴露 OB 记忆工具）。
+  // 带会话刷新重试——OB 重启后旧 session 失效，第一次会失败；不重试的话 tools/list 会
+  // 瞬态只剩心潮 3 个工具（OB 工具消失），直到下次拉取。tools/list 只读、重试安全。
+  async listTools() {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        await this.initialize();
+        const raw = await this.post({ jsonrpc: '2.0', id: Date.now(), method: 'tools/list', params: {} });
+        return raw?.result?.tools ?? raw?.tools ?? [];
+      } catch (error) {
+        this.sessionId = null;
+        this.stateless = false;
+        if (attempt) throw error;
+      }
+    }
+    return [];
+  }
+
+  async recentMaterial(drives = [], emotion = null) {
+    return (await this.recentMaterialWithRefs(drives, emotion)).text;
+  }
+
+  async recentMaterialWithRefs(drives = [], emotion = null) {
+    const result = await this.call('breath', {
+      ...emotionArgs(emotion),
+      query: withDriveHint('近期重要记忆、情绪、关系变化和未完成事项', drives),
+      max_results: this.config.breathMaxResults,
+      max_tokens: this.config.breathMaxTokens
+    });
+    return materialWithRefs(extractText(result), 10000);
+  }
+
+  async daytimeMaterial(drives = [], emotion = null) {
+    return (await this.daytimeMaterialWithRefs(drives, emotion)).text;
+  }
+
+  // 2026-09-07 改：不再把一段"指令"当 query 发给 OB——检索会拿"记忆/浮现/想起"这些词去匹配讲记忆本身的旧条目，
+  // 还会命中已沉底的桶（查询道只认词，不认 dont_surface）。改走 breath_advanced 的浮现道：不传 query，
+  // OB 按权重给未解决的记忆，本来就尊重沉底/已消化；date_from 限最近两周；mode=automatic 表明是自动召回。
+  // 驱力标签不再拼进 query，只保留情绪坐标做共振排序。
+  // 3.3.9：exclude = 最近浮现过的桶。OB 没有排除参数，所以多要几条，本地剔掉再取回原来的条数。
+  async daytimeMaterialWithRefs(drives = [], emotion = null, now = new Date(), exclude = []) {
+    const want = Number(this.config.breathMaxResults) || 3;
+    const result = await this.call('breath_advanced', {
+      ...emotionArgs(emotion),
+      date_from: daysAgo(now, RECENT_WINDOW_DAYS),
+      mode: 'automatic',
+      with_ids: true,
+      max_results: exclude.length ? Math.min(20, want + exclude.length + 2) : want,
+      max_tokens: exclude.length ? 20000 : 12000   // 核心准则段每次都在最前、单独就要六千上下，后面的浮现记忆得留出位置（只是字节，不过模型）
+    });
+    return materialWithRefs(dropBuckets(extractText(result), exclude, want), 10000);
+  }
+
+  // 自主念头用的材料：比日间浮现更短，只要能让念头落到具体的事上。
+  async thoughtMaterial(drives = [], emotion = null) {
+    return (await this.thoughtMaterialWithRefs(drives, emotion)).text;
+  }
+
+  async thoughtMaterialWithRefs(drives = [], emotion = null, now = new Date(), exclude = []) {
+    const want = Math.max(1, Math.min(3, Number(this.config.breathMaxResults) || 2));
+    const result = await this.call('breath_advanced', {
+      ...emotionArgs(emotion),
+      date_from: daysAgo(now, RECENT_WINDOW_DAYS),
+      mode: 'automatic',
+      with_ids: true,
+      max_results: exclude.length ? Math.min(20, want + exclude.length + 2) : want,
+      max_tokens: exclude.length ? 16000 : 9000
+    });
+    return materialWithRefs(dropBuckets(extractText(result), exclude, want), 4000);
+  }
+
+  // 梦的原料（3.3）：OB 的 dream 是"最近 N 小时有变动的记忆全量"——记忆正在被消化的东西。
+  // 按桶拆开，去掉技术/事务类，保留主题、情感坐标和正文，封顶 maxChars。
+  async digestMaterial(windowHours = 48, { maxChars = 5000, maxBuckets = 8, exclude = DREAM_EXCLUDE_DOMAINS } = {}) {
+    const result = await this.call('dream', { window_hours: windowHours }, 30000);
+    const text = extractText(result);
+    const blocks = text.split(/\n---\n/).map((b) => b.trim()).filter((b) => /^\[/.test(b));
+    const picked = [];
+    for (const block of blocks) {
+      const head = block.split('\n')[0];
+      const domains = ((head.match(/主题[:：]\s*([^\s]+)/) || [])[1] || '').split(/[,，]/).filter(Boolean);
+      if (domains.some((d) => exclude.has(d))) continue;
+      const id = (block.match(/^ID:\s*([a-f0-9]+)/m) || [])[1] || null;
+      const va = head.match(/V(-?[\d.]+)\/A(-?[\d.]+)/);
+      const body = block.split('\n').slice(1).filter((l) => !/^ID:|^👣|^↳/.test(l)).join('\n').trim();
+      if (!body) continue;
+      picked.push({ id, domains, valence: va ? Number(va[1]) : null, arousal: va ? Number(va[2]) : null, text: body.slice(0, 900) });
+      if (picked.length >= maxBuckets) break;
+    }
+    let out = '';
+    for (const item of picked) {
+      const line = `[domain:${item.domains.join(',')}]${item.valence != null ? ` [情感:V${item.valence}/A${item.arousal}]` : ''}\n${item.text}\n\n`;
+      if (out.length + line.length > maxChars) break;
+      out += line;
+    }
+    return { text: out.trim(), bucketIds: picked.map((p) => p.id).filter(Boolean), domains: [...new Set(picked.flatMap((p) => p.domains))], total: blocks.length, kept: picked.length };
+  }
+
+  // 一条远期的小事：让梦有可以跳跃的另一头。30 天以前，只要一条。
+  async farMaterial(now = new Date()) {
+    const dateTo = new Date(now.getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
+    // OB 3.6：日期过滤只在 breath_advanced 上（公开 breath 不收 date_to）
+    // 同上：不传 query 走浮现道，只用 date_to 把窗口推到 30 天以前
+    const result = await this.call('breath_advanced', {
+      mode: 'automatic', max_results: 1, max_tokens: 10000, date_to: dateTo, with_ids: true,
+    });
+    return materialWithRefs(extractText(result), 1500);
+  }
+
+  async recentContinuityMaterial(maxTokens = this.config.breathMaxTokens, emotion = null) {
+    const result = await this.call('breath', {
+      ...emotionArgs(emotion),
+      query: [
+        '新窗口近期连续性：只返回最近发生了什么，以及仍直接影响现在的人物与关系变化、生活重点和未完成约定。',
+        '不要返回核心准则、自我基岩或长期画像；这些由客户端从自己的核心指令和长期记忆单独完整读取。',
+        '不要返回部署、代码、接口、密钥、系统日志或已经过期的技术待办。',
+      ].join(''),
+      max_results: Math.max(3, Math.min(8, Number(this.config.breathMaxResults) || 3)),
+      max_tokens: Math.max(200, Math.min(3000, Number(maxTokens) || 1600)),
+    });
+    return extractText(result).slice(0, 16000);
+  }
+
+  // Compatibility alias for older callers.  It intentionally returns only
+  // recent continuity; it is not a replacement for repository bedrock.
+  async handoffMaterial(maxTokens = this.config.breathMaxTokens) {
+    return this.recentContinuityMaterial(maxTokens);
+  }
+
+  // 网页记忆星图只读取 pulse 暴露的桶元数据，不读取正文。公开版当前的
+  // pulse 是人类可读文本；未来融合版若直接返回结构化 JSON，同一适配器也
+  // 会保留 driveSnapshot / driveAffinity 等 3.0 可选字段。
+  async memoryMap() {
+    if (!this.config.readEnabled) return emptyMemoryMap('not_configured');
+    // 绝不在请求里同步等 OB pulse（679+ 桶要几十秒，必然超时 502）：
+    // 有缓存就秒回（过期了顺手后台刷新）；没缓存就后台开建、本次立刻回“构建中”。
+    if (this._memoryMapCache) {
+      if (Date.now() - this._memoryMapCache.at >= 600_000) this._triggerMemoryMapBuild();
+      return this._memoryMapCache.value;
+    }
+    this._triggerMemoryMapBuild();
+    return buildingMemoryMap();
+  }
+
+  _triggerMemoryMapBuild() {
+    if (this._memoryMapBuilding) return; // 同时只跑一个构建，避免并发抢 OB
+    this._memoryMapBuilding = true;
+    (async () => {
+      try {
+        // 优先走 OB 的结构化星表路由（/api/bucket-map，sidecar token）；
+        // 老版 OB 没有这条路由时退回 pulse 文本解析（pulse 是人类摘要，
+        // 桶多时不含逐桶行，解析出 0 颗星——所以结构化路由才是正路）。
+        let map = await this.fetchBucketMapStructured();
+        if (!map) {
+          const result = await this.call('pulse', {}, 60000);
+          map = parseMemoryMapText(extractText(result));
+        }
+        if (map.available && map.stars.length) {
+          this._memoryMapCache = { at: Date.now(), value: map };
+        } else {
+          console.error('[ombre] memory map build yielded no stars', { reason: map.reason ?? null, total: map.total });
+        }
+      } catch (error) {
+        // 失败不缓存，下次请求会再次触发重试；必须留痕，不许静默。
+        console.error('[ombre] memory map build failed:', error.message);
+      } finally {
+        this._memoryMapBuilding = false;
+      }
+    })();
+  }
+
+  // OB 结构化星表（元数据，无正文）。404 = 老版 OB 没有该路由，返回 null 让调用方退回 pulse。
+  async fetchBucketMapStructured() {
+    const url = new URL(this.config.url);
+    url.pathname = '/api/bucket-map';
+    url.search = '';
+    const headers = { Accept: 'application/json', 'X-Ombre-Caller': 'dynamic-mind' };
+    if (this.config.token) headers.Authorization = `Bearer ${this.config.token}`;
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error(`Ombre bucket-map failed: HTTP ${response.status}`);
+    const data = await response.json();
+    if (!Array.isArray(data?.stars)) return null;
+    const map = parseMemoryMapText(JSON.stringify({ stars: data.stars, stats: data.stats ?? {} }));
+    if (Number.isFinite(Number(data.total))) map.total = Number(data.total);
+    return map;
+  }
+
+  async memoryBucketPreview(bucketId, maxLines = 7) {
+    if (!this.config.readEnabled) return emptyMemoryPreview(bucketId, 'not_configured');
+    const id = String(bucketId ?? '').trim();
+    if (!/^[A-Za-z0-9._-]{1,160}$/.test(id)) return emptyMemoryPreview(id, 'invalid_id');
+    const url = new URL(this.config.url);
+    url.pathname = `/api/bucket-preview/${encodeURIComponent(id)}`;
+    url.search = '';
+    const headers = { Accept: 'application/json', 'X-Ombre-Caller': 'dynamic-mind' };
+    if (this.config.token) headers.Authorization = `Bearer ${this.config.token}`;
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+    if (response.status === 404) return emptyMemoryPreview(id, 'not_found');
+    if (!response.ok) throw new Error(`Ombre preview failed: HTTP ${response.status}`);
+    return parseMemoryPreviewText(JSON.stringify({ ok: true, ...(await response.json()) }), id, maxLines);
+  }
+
+  async memoryBucketPreviews(bucketIds = [], maxLines = 7) {
+    const ids = [...new Set((Array.isArray(bucketIds) ? bucketIds : [])
+      .map(String).map((id) => id.trim()).filter(Boolean))].slice(0, 8);
+    const previews = [];
+    for (const id of ids) {
+      const item = await this.memoryBucketPreview(id, maxLines);
+      if (item.available && item.preview) previews.push(item);
+    }
+    return previews;
+  }
+
+  // 用户显式 hold 后，新产出仍走 OB 现有 grow；心潮不按 ID 改写源桶正文。
+  async storeHeldOutput(item) {
+    if (!this.config.writeEnabled) throw new Error('ombre_write_disabled');
+    const content = String(item?.content ?? '').trim();
+    if (!content) throw new Error('box_content_empty');
+    // 【Yuki 接入 · 部署适配改动】官方 OB 的 grow 没有 source 参数（fork 定制），见 README-部署.md。
+    const result = await this.call('grow', {
+      content,
+    });
+    const text = extractText(result);
+    const bucketId = parseGrowBucketIds(text)[0] ?? null;
+    if (!bucketId) throw new Error('ombre_grow_missing_bucket_id');
+    return bucketId;
+  }
+
+  // 自我觉察确认后写进 OB 的 I（候选桶，之后由 dream 见证升正式条目）。只在写开关打开时可用。
+  async writeSelfAwareness(content, aspect = 'patterns') {
+    if (!this.config.writeEnabled) throw new Error('ombre_write_disabled');
+    const text = String(content ?? '').trim();
+    if (!text) throw new Error('awareness_content_empty');
+    const result = await this.call('I', { content: text, aspect: String(aspect || 'patterns') });
+    return extractText(result).slice(0, 600);
+  }
+
+  // 只用 OB 已有 trace 记一条来源关系；不改正文、不强制 anchor、不新增 OB 写能力。
+  async traceHeldOutputSources(outputBucketId, sourceBucketIds = []) {
+    if (!this.config.writeEnabled) throw new Error('ombre_write_disabled');
+    const outputId = String(outputBucketId ?? '').trim();
+    const sourceIds = [...new Set((Array.isArray(sourceBucketIds) ? sourceBucketIds : [])
+      .map(String).map((id) => id.trim()).filter((id) => id && id !== outputId))].slice(0, 8);
+    const linked = [];
+    for (const sourceId of sourceIds) {
+      const result = await this.call('trace', {
+        bucket_id: sourceId,
+        meaning_append: `心潮延续：这段记忆后来生出一条被用户留下的独处产出（${outputId}）。`,
+      });
+      const text = extractText(result);
+      if (/^(未找到记忆桶|修改失败)/.test(text.trim())) {
+        throw new Error(`ombre_trace_failed:${sourceId}`);
+      }
+      linked.push(sourceId);
+    }
+    return linked;
+  }
+
+  async storeDream(dream) {
+    if (!this.config.writeEnabled) return null;
+    const content = [
+      `梦境：${dream.dream}`,
+      `梦境余韵：${dream.residue}`,
+      `醒后意识：${dream.awareness}`,
+      '说明：这是睡眠结算产生的梦境，不是现实事件；调用外部记忆服务不等于醒来。'
+    ].join('\n');
+    // 【Yuki 接入 · 部署适配改动（非上游代码）】官方 OB（P0luz 3.6.x）的 hold 没有
+    // auto/source 参数（那是 CyberSealNull fork 的去重指纹），多传会被 extra_forbidden 拒绝。
+    // 去掉这两个参数后写入语义不变（tags:'dream' 已保留来源信息）。
+    // 见 C:/Xinchao/README-部署.md「对第三方代码的改动清单」。
+    const result = await this.call('hold', {
+      content,
+      tags: 'dream',
+      importance: 7,
+    });
+    const text = extractText(result);
+    const bucketId = text.match(/[a-f0-9]{12,}/i)?.[0] ?? null;
+    // 梦是睡眠结算的残渣，不该作为真实记忆回到 breath（否则下次梦引擎会把旧梦当素材捞出 → 梦吃梦）。
+    // 出生即标 dont_surface=1：仍存在 OB、仍显示在梦境页（来自心潮 state），但不进 breath 召回。
+    if (bucketId) {
+      try { await this.call('trace', { bucket_id: bucketId, dont_surface: 1 }); }
+      catch (error) { /* best-effort：标记失败不阻断存梦本身 */ }
+    }
+    return bucketId;
+  }
+}
+
+// 把当前最强的几个驱动力拼进 breath 的 query，让"此刻想什么"影响"想起什么"。
+//
+// 这里只改排序，不改准入：能不能返回仍然由 Ombre 的 admission gate 判定
+// （要有原句、词锚或高语义证据）。所以驱动力高不会凭空造出记忆，只会让
+// 本来就有证据的那几条里，跟当下状态相关的先浮上来。末尾那句兜底很重要，
+// 没有它的话强驱动力会把召回卡死成空。
+// 情绪 → 记忆：把此刻情绪坐标交给 breath 做共振排序（OB 没坐标时给中性分 0.5，有坐标就按距离算）。
+function emotionArgs(emotion) {
+  if (!emotion) return {};
+  const v = Number(emotion.valence);
+  const a = Number(emotion.arousal);
+  if (!Number.isFinite(v) || !Number.isFinite(a)) return {};
+  return { valence: Number(Math.max(0, Math.min(1, v)).toFixed(4)), arousal: Number(Math.max(0, Math.min(1, a)).toFixed(4)) };
+}
+
+function withDriveHint(base, drives) {
+  const labels = (Array.isArray(drives) ? drives : [])
+    .filter((item) => Number(item?.value) >= DRIVE_HINT_MIN)
+    .slice(0, DRIVE_HINT_MAX_LABELS)
+    .map((item) => String(item?.label ?? '').trim())
+    .filter(Boolean);
+  if (!labels.length) return base;
+  return `${base}。此刻最强的内在状态是${labels.join('、')}，优先浮现与之真正相关的具体记忆；没有直接相关的就照常返回近期重要的`;
+}
+
+const DRIVE_HINT_MIN = 0.5;
+const DRIVE_HINT_MAX_LABELS = 3;
+
+// 从 breath 输出里把每条桶表头的 [domain:...] 解析出来，供记忆共振算亲和度。
+// OB 2.6.5+（breath-meta）在表头带 domain/tags；老输出没有时返回空数组，不影响。
+export function parseSurfacedDomains(text) {
+  const domains = [];
+  const re = /\[domain:([^\]]*)\]/g;
+  let match;
+  while ((match = re.exec(String(text ?? ''))) !== null) {
+    for (const part of match[1].split(',')) {
+      const value = part.trim();
+      if (value) domains.push(value);
+    }
+  }
+  return domains;
+}
+
+// OB breath 2.6.5+ 每个浮现桶的表头都带 [bucket_id:...]。
+// 只取表头里的 ID，不从正文猜，避免把记忆里偶然出现的字符串误当成来源桶。
+// 老版 OB 没有这个元数据时返回空数组，不影响旧调用者。
+/** 3.3.9：按桶切开浮现文本，去掉 exclude 里的桶，最多留 keep 段。只认带 [权重:…] 的段——那是浮现的记忆；
+ *  最前面的「核心准则」条目也带 bucket_id 但没有权重，整段原样保留、不计入条数。全被剔掉就只剩准则，这轮没东西浮现。 */
+export function dropBuckets(text, exclude = [], keep = Infinity) {
+  const src = String(text ?? '');
+  const ex = new Set((exclude ?? []).map(String));
+  if (!ex.size && !Number.isFinite(keep)) return src;
+  const re = /\[权重:[^\]]*\]\s*\[bucket_id:([A-Za-z0-9._-]{1,160})\]/g;
+  const starts = [];
+  let m;
+  while ((m = re.exec(src)) !== null) starts.push({ i: m.index, id: m[1] });
+  if (!starts.length) return src;
+  const head = src.slice(0, starts[0].i);
+  const blocks = starts.map((s, k) => ({ id: s.id, text: src.slice(s.i, k + 1 < starts.length ? starts[k + 1].i : src.length) }));
+  const kept = blocks.filter((b) => !ex.has(b.id)).slice(0, keep);
+  return head + kept.map((b) => b.text).join('');
+}
+
+export function parseSurfacedBucketIds(text) {
+  const ids = [];
+  const seen = new Set();
+  const re = /\[bucket_id:([A-Za-z0-9._-]{1,160})\]/g;
+  let match;
+  while ((match = re.exec(String(text ?? ''))) !== null) {
+    const id = match[1].trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+const RECENT_WINDOW_DAYS = 14;
+function daysAgo(now, days) { return new Date(now.getTime() - days * 86_400_000).toISOString().slice(0, 10); }
+
+// 把 OB 输出里不该当原料的块去掉：已沉底（"已删除到档案"）的桶、with_ids 追加的 json 尾块、预算不足提示行。
+// 也去掉"核心准则"段：那是行为底线不是记忆，每次都排在最前且很占预算；浮现原料只从"浮现记忆/久未浮现"段取。
+export function cleanSurfacedText(text) {
+  const body = String(text ?? '').split('=== ombre:result-ids ===')[0];
+  // 段标题（=== 浮现记忆 === 这类）前面没有分隔线，会和上一段最后一桶粘在一起，所以按标题也切
+  return body.split(/\n---\n|\n(?==== )/)
+    .map((block) => block.replace(/^===[^\n]*===\s*$/gm, '').replace(/^\[?token 预算不足[^\n]*\n?/gm, '').trim())
+    .filter((block) => block && !/已删除到档案|已退出日常记忆|\[核心准则\]/.test(block))
+    // 技术/事务类主题域不当浮现原料（和梦的原料同一份排除表）：他白天想起的应该是人和事，不是部署
+    .filter((block) => !(((block.match(/\[domain:([^\]]+)\]/) || [])[1] || '').split(/[,，]/).some((d) => DREAM_EXCLUDE_DOMAINS.has(d.trim()))))
+    .join('\n---\n');
+}
+
+export function materialWithRefs(text, maxChars = 10000) {
+  const limited = cleanSurfacedText(text).slice(0, Math.max(0, Number(maxChars) || 0));
+  return {
+    text: limited,
+    bucketIds: parseSurfacedBucketIds(limited),
+    domains: parseSurfacedDomains(limited),
+  };
+}
+
+// grow 返回的人类可读结果中，真实桶 ID 只出现在“→”或每条 📎/📝 之后。
+// 明确排除 batch:g_... 和正文中的偶然字符串，不做宽泛 ID 猜测。
+export function parseGrowBucketIds(text) {
+  const ids = [];
+  const seen = new Set();
+  const source = String(text ?? '');
+  const patterns = [/(?:→|[📎📝])\s*([A-Za-z0-9._-]{6,160})/g];
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(source)) !== null) {
+      const id = match[1].trim();
+      if (!seen.has(id)) {
+        seen.add(id);
+        ids.push(id);
+      }
+    }
+  }
+  return ids;
+}
+
+function parseMcp(text) {
+  const data = text.split('\n').find((line) => line.startsWith('data:'))?.slice(5).trim() ?? text;
+  return JSON.parse(data);
+}
+
+function extractText(result) {
+  const content = result?.result?.content ?? result?.content ?? [];
+  return content.filter((part) => part.type === 'text').map((part) => part.text).join('\n');
+}
+
+function emptyMemoryMap(reason = 'empty') {
+  return {
+    schemaVersion: 2,
+    generatedAt: new Date().toISOString(),
+    available: false,
+    reason,
+    total: 0,
+    stats: {},
+    stars: [],
+    edges: [],
+    capabilities: {
+      explicitRelations: false,
+      driveSnapshots: false,
+      driveAffinity: false,
+      timestamps: false,
+    },
+  };
+}
+
+// 首次还没缓存、正在后台构建时的即时占位：available:false + reason:'building'，网页据此提示并稍后自动重试。
+function buildingMemoryMap() {
+  return {
+    schemaVersion: 2,
+    generatedAt: new Date().toISOString(),
+    available: false,
+    reason: 'building',
+    total: 0,
+    stats: {},
+    stars: [],
+    edges: [],
+    capabilities: {
+      explicitRelations: false,
+      driveSnapshots: false,
+      driveAffinity: false,
+      timestamps: false,
+    },
+  };
+}
+
+function emptyMemoryPreview(id, reason = 'empty') {
+  return { schemaVersion: 1, available: false, reason, id: String(id ?? ''), preview: '', lineCount: 0, truncated: false };
+}
+
+export function parseMemoryPreviewText(raw, expectedId = '', maxLines = 7) {
+  const text = String(raw ?? '').trim();
+  if (!text) return emptyMemoryPreview(expectedId, 'empty');
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed?.ok) return emptyMemoryPreview(expectedId, String(parsed?.error || 'not_found'));
+    const id = String(parsed.id ?? expectedId).trim();
+    if (expectedId && id !== expectedId) return emptyMemoryPreview(expectedId, 'id_mismatch');
+    const lineLimit = Math.max(1, Math.min(7, Number(maxLines) || 7));
+    const preview = String(parsed.preview ?? '').split(/\r?\n/).slice(0, lineLimit).join('\n').slice(0, 1400);
+    return {
+      schemaVersion: 1,
+      available: Boolean(preview),
+      reason: preview ? undefined : 'empty',
+      id,
+      preview,
+      lineCount: preview ? preview.split(/\r?\n/).length : 0,
+      truncated: Boolean(parsed.truncated),
+    };
+  } catch {
+    return emptyMemoryPreview(expectedId, 'invalid_response');
+  }
+}
+
+function numberOrNull(value) {
+  if (value == null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeStar(star = {}) {
+  const id = String(star.id ?? star.bucketId ?? star.bucket_id ?? '').trim();
+  if (!id) return null;
+  const pinned = Boolean(star.pinned || star.bucketType === 'permanent' || star.type === 'permanent');
+  const driveSnapshot = star.driveSnapshot ?? star.drive_snapshot ?? null;
+  const driveAffinity = star.driveAffinity ?? star.drive_affinity ?? null;
+  return {
+    id,
+    title: String(star.title ?? star.name ?? '（无题）').trim() || '（无题）',
+    pinned,
+    bucketType: String(star.bucketType ?? star.type ?? (pinned ? 'permanent' : 'dynamic')),
+    domains: Array.isArray(star.domains) ? star.domains.map(String).filter(Boolean)
+      : Array.isArray(star.domain) ? star.domain.map(String).filter(Boolean)
+        : String(star.domain ?? '').split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+    valence: numberOrNull(star.valence),
+    arousal: numberOrNull(star.arousal),
+    importance: numberOrNull(star.importance),
+    weight: numberOrNull(star.weight ?? star.score),
+    tags: Array.isArray(star.tags) ? star.tags.map(String).filter(Boolean)
+      : String(star.tags ?? '').split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+    createdAt: star.createdAt ?? star.created_at ?? null,
+    updatedAt: star.updatedAt ?? star.updated_at ?? null,
+    lastActiveAt: star.lastActiveAt ?? star.last_active ?? null,
+    activationCount: numberOrNull(star.activationCount ?? star.activation_count),
+    anchored: Boolean(star.anchored),
+    resolved: Boolean(star.resolved),
+    historical: star.historical == null ? !driveSnapshot : Boolean(star.historical),
+    meaningCount: Array.isArray(star.meaning) ? star.meaning.length : Number(star.meaningCount ?? 0) || 0,
+    driveSnapshot: driveSnapshot && typeof driveSnapshot === 'object' ? driveSnapshot : null,
+    driveAffinity: driveAffinity && typeof driveAffinity === 'object' ? driveAffinity : null,
+  };
+}
+
+// 星图是可视化不是全量导出：桶越多，建边(O(pairs))和 payload 越炸。只保留最重的一批
+// ——固化(pinned)优先，其余按权重降序——把负载和总桶数脱钩。total 仍报真实数，网页显示不变。
+const MAX_MAP_STARS = 400;
+function capMapStars(stars, max = MAX_MAP_STARS) {
+  if (!Array.isArray(stars) || stars.length <= max) return stars;
+  return stars
+    .map((star, index) => ({ star, index, rank: (star.pinned ? 1e9 : 0) + (Number(star.weight) || 0) }))
+    .sort((a, b) => (b.rank - a.rank) || (a.index - b.index))
+    .slice(0, max)
+    .map((item) => item.star);
+}
+
+function buildMapEdges(stars, minShared = 3, maxPerNode = 6) {
+  const byTag = new Map();
+  stars.forEach((star, index) => star.tags.forEach((tag) => {
+    if (!byTag.has(tag)) byTag.set(tag, []);
+    byTag.get(tag).push(index);
+  }));
+  const pairs = new Map();
+  for (const indexes of byTag.values()) {
+    if (indexes.length > stars.length * .5) continue;
+    for (let left = 0; left < indexes.length; left += 1) {
+      for (let right = left + 1; right < indexes.length; right += 1) {
+        const key = `${indexes[left]}|${indexes[right]}`;
+        pairs.set(key, (pairs.get(key) || 0) + 1);
+      }
+    }
+  }
+  const candidates = [];
+  for (const [key, shared] of pairs) {
+    if (shared < minShared) continue;
+    const [left, right] = key.split('|').map(Number);
+    const denominator = Math.min(stars[left].tags.length, stars[right].tags.length) || 1;
+    candidates.push({ left, right, shared, similarity: Math.min(1, shared / denominator) });
+  }
+  candidates.sort((a, b) => b.similarity - a.similarity || b.shared - a.shared);
+  const degree = new Array(stars.length).fill(0);
+  const edges = [];
+  for (const candidate of candidates) {
+    if (degree[candidate.left] >= maxPerNode || degree[candidate.right] >= maxPerNode) continue;
+    degree[candidate.left] += 1;
+    degree[candidate.right] += 1;
+    edges.push({
+      source: stars[candidate.left].id,
+      target: stars[candidate.right].id,
+      similarity: Number(candidate.similarity.toFixed(2)),
+      kind: 'tag-derived',
+      label: `${candidate.shared} 个共同标签`,
+    });
+  }
+  return edges;
+}
+
+function normalizeEdges(edges, stars) {
+  const ids = new Set(stars.map((star) => star.id));
+  return (Array.isArray(edges) ? edges : []).flatMap((edge) => {
+    const source = String(edge?.source ?? '').trim();
+    const target = String(edge?.target ?? '').trim();
+    if (!source || !target || source === target || !ids.has(source) || !ids.has(target)) return [];
+    return [{
+      source,
+      target,
+      similarity: Math.max(0, Math.min(1, Number(edge.similarity ?? edge.weight ?? 0) || 0)),
+      kind: edge.kind === 'semantic' || edge.kind === 'tag-derived' ? edge.kind : 'explicit',
+      label: String(edge.label ?? '').slice(0, 120),
+    }];
+  });
+}
+
+export function parseMemoryMapText(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return emptyMemoryMap('empty');
+
+  // 3.0 结构化输出优先；公开版旧 pulse 继续走下方无损文本适配。
+  try {
+    const parsed = JSON.parse(text);
+    const sourceStars = parsed.stars ?? parsed.nodes;
+    if (Array.isArray(sourceStars)) {
+      const allStars = sourceStars.map(normalizeStar).filter(Boolean);
+      const stars = capMapStars(allStars);
+      const explicitEdges = normalizeEdges(parsed.edges ?? parsed.links, stars);
+      const capabilities = {
+        explicitRelations: explicitEdges.length > 0,
+        driveSnapshots: stars.some((star) => star.driveSnapshot),
+        driveAffinity: stars.some((star) => star.driveAffinity),
+        timestamps: stars.some((star) => star.createdAt || star.updatedAt),
+      };
+      return {
+        schemaVersion: Number(parsed.schemaVersion ?? 2),
+        generatedAt: String(parsed.generatedAt ?? new Date().toISOString()),
+        available: true,
+        total: allStars.length,
+        stats: parsed.stats && typeof parsed.stats === 'object' ? parsed.stats : {},
+        stars,
+        edges: explicitEdges.length ? explicitEdges : buildMapEdges(stars),
+        capabilities,
+      };
+    }
+  } catch {
+    // 人类可读 pulse 不是 JSON，继续解析；不把解析失败当服务故障。
+  }
+
+  const stats = {};
+  for (const [key, label] of [['pinned', '固化桶'], ['dynamic', '动态桶'], ['archived', '归档桶']]) {
+    const match = text.match(new RegExp(`${label}[:：]\\s*(\\d+)`));
+    if (match) stats[key] = Number(match[1]);
+  }
+  const size = text.match(/总占用[:：]\s*([\d.]+\s*\w+)/);
+  if (size) stats.size = size[1];
+
+  const stars = [];
+  const line = /((?:\uD83D\uDCCC)?)\s*\[([0-9a-f]+)\]\s*《([^》]*)》([^\n]*)/gi;
+  let match;
+  while ((match = line.exec(text)) !== null) {
+    const [, pin, id, title, tail] = match;
+    const domain = (tail.match(/主题[:：]\s*([^\s]+)/) || [])[1] || '';
+    const emotion = tail.match(/情感[:：]\s*V(-?[\d.]+)\/A(-?[\d.]+)/);
+    const importance = (tail.match(/重要[:：]\s*([\d.]+)/) || [])[1];
+    const weight = (tail.match(/权重[:：]\s*([\d.]+)/) || [])[1];
+    const tags = (tail.match(/标签[:：]\s*(.+)$/) || [])[1] || '';
+    stars.push(normalizeStar({
+      id,
+      title,
+      pinned: pin.length > 0,
+      bucketType: pin.length > 0 ? 'permanent' : 'dynamic',
+      domains: domain.split(/[,，]/).filter(Boolean),
+      valence: emotion ? Number(emotion[1]) : null,
+      arousal: emotion ? Number(emotion[2]) : null,
+      importance: importance ? Number(importance) : null,
+      weight: weight ? Number(weight) : null,
+      tags: tags.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+      historical: true,
+    }));
+  }
+  const allStars = stars.filter(Boolean);
+  const cappedStars = capMapStars(allStars);
+  return {
+    schemaVersion: 2,
+    generatedAt: new Date().toISOString(),
+    available: true,
+    total: allStars.length,
+    stats,
+    stars: cappedStars,
+    edges: buildMapEdges(cappedStars),
+    capabilities: {
+      explicitRelations: false,
+      driveSnapshots: false,
+      driveAffinity: false,
+      timestamps: false,
+    },
+  };
+}

@@ -1,12 +1,17 @@
 # Yuki 初雪
 
-一个 AI 伴侣（人机恋）聊天应用。仓库含三端源码：
+一个 AI 伴侣（人机恋）聊天应用。仓库含客户端与服务端源码：
 
 | 目录 | 内容 | 技术栈 |
 |---|---|---|
 | `android-native/` | Android 客户端 | Kotlin + Jetpack Compose（compileSdk 35 / minSdk 26 / Java 17） |
 | `app/` | Web 前端 | Vite + React 18 + TypeScript + Capacitor 8 |
 | `backend/` | 服务端与后台管理页 | FastAPI + uvicorn + SQLite |
+| `xinchao/` | 心潮引擎 —— 给角色一个**对话之外持续变化的内在状态**（驱动、情绪、念头池、梦） | Node.js 20+ |
+| `ombre-brain/` | Ombre Brain —— 长期情绪记忆库，以 MCP 接入 | Python |
+
+> 后两个是**可选的云端记忆后端**。不接它们，App 仍然能用（只是没有"云端记忆"与"Ta 主动来找你"这些基于服务端状态的功能）。
+> 两者的部署顺序、环境变量与上游出处见各自的 `README.md`；许可与改动说明见 NOTICE.md。
 
 ## ⚠️ 关于这份源码
 

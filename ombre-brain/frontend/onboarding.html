@@ -1,0 +1,198 @@
+<!doctype html>
+<!--
+  onboarding.html — Ombre Brain 首次部署向导。
+  做什么：选择部署模式、展示系统推导的安全配置、预检并保存。
+  不做什么：不处理密码、不保存 API Key、不直接修改平台环境变量或重启服务。
+  对外入口：GET /onboarding；数据来自 /api/onboarding/*。
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ombre Brain · 安全部署向导</title>
+  <style>
+    :root { color-scheme:light; --bg:#eee9dd; --card:#f7f3e9; --text:#312f29; --dim:#756f63; --accent:#b96f43; --ok:#5f8758; --bad:#a64b3c; --line:#d8cfbd; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 20% 0,#faf7ef,var(--bg) 55%); color:var(--text); font-family:system-ui,"Noto Sans SC",sans-serif; }
+    main { width:min(920px,calc(100% - 32px)); margin:40px auto; }
+    header { margin-bottom:24px; }
+    h1 { margin:0 0 8px; font-size:30px; }
+    p { color:var(--dim); line-height:1.7; }
+    .step { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px; margin:14px 0; box-shadow:8px 8px 24px rgba(91,76,52,.08); }
+    .profiles { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .profile { border:2px solid transparent; background:#fffaf0; border-radius:14px; padding:16px; cursor:pointer; min-height:174px; }
+    .profile.selected { border-color:var(--accent); box-shadow:0 0 0 3px rgba(185,111,67,.12); }
+    .profile h3 { margin:0 0 8px; }
+    .profile small { color:var(--dim); }
+    label { display:block; margin:12px 0 5px; font-weight:600; }
+    input,select { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:white; font:inherit; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .report { padding:14px; border-radius:12px; background:#ece7da; font:13px ui-monospace,monospace; line-height:1.7; white-space:pre-wrap; }
+    .notice { padding:11px 13px; border-left:4px solid var(--accent); background:#fff8e8; color:var(--dim); margin-top:12px; }
+    .notice.bad { border-color:var(--bad); color:var(--bad); }
+    button { border:0; border-radius:11px; padding:11px 18px; background:var(--accent); color:white; font:inherit; font-weight:700; cursor:pointer; }
+    button.secondary { background:#746c5e; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+    #advanced-fields { display:none; }
+    @media(max-width:760px){ .profiles,.row{grid-template-columns:1fr} main{margin:20px auto} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>先选你要在哪里使用</h1>
+    <p>不用先理解 OAuth、端口和反向代理。选择场景，系统会给出安全默认；高级配置仍然保留。</p>
+  </header>
+
+  <section class="step">
+    <h2>① 部署场景</h2>
+    <div id="profiles" class="profiles"><p>正在读取可用模式…</p></div>
+  </section>
+
+  <section class="step">
+    <h2>② 连接信息</h2>
+    <div id="public-fields">
+      <label for="public-url">公网 HTTPS 地址（可稍后填写）</label>
+      <input id="public-url" placeholder="https://your-service.example.com">
+    </div>
+    <div id="advanced-fields">
+      <div class="row">
+        <div><label for="transport">MCP transport</label><select id="transport"><option value="streamable-http">streamable-http</option><option value="stdio">stdio</option></select></div>
+        <div><label for="advanced-auth">MCP 鉴权</label><select id="advanced-auth"><option value="true">开启（推荐）</option><option value="false">关闭（需外部安全边界）</option></select></div>
+      </div>
+    </div>
+    <div id="mode-note" class="notice">请选择一种部署模式。</div>
+  </section>
+
+  <section class="step">
+    <h2>③ 保存前检查</h2>
+    <div id="runtime-report" class="report">正在读取实际生效配置…</div>
+    <div id="result" class="notice" style="display:none"></div>
+    <div class="actions">
+      <button class="secondary" type="button" onclick="location.href='/'">返回 Dashboard</button>
+      <button id="save" type="button" onclick="saveProfile()" disabled>保存安全配置</button>
+    </div>
+  </section>
+</main>
+<script>
+let selectedProfile = '';
+let catalog = [];
+
+async function readJsonSafe(response) {
+  const text = await response.text();
+  if (!text.trim()) throw new Error('服务没有返回内容（HTTP ' + response.status + '）');
+  try { return JSON.parse(text); }
+  catch (error) { throw new Error('服务返回了无法识别的内容（HTTP ' + response.status + '）'); }
+}
+
+function optionsForSelection() {
+  const options = {};
+  if (selectedProfile === 'public_secure') options.public_url = document.getElementById('public-url').value.trim();
+  if (selectedProfile === 'advanced') {
+    options.transport = document.getElementById('transport').value;
+    options.mcp_require_auth = document.getElementById('advanced-auth').value === 'true';
+    options.public_url = document.getElementById('public-url').value.trim();
+  }
+  return options;
+}
+
+function selectProfile(profile) {
+  selectedProfile = profile;
+  document.querySelectorAll('.profile').forEach(card => card.classList.toggle('selected', card.dataset.id === profile));
+  document.getElementById('advanced-fields').style.display = profile === 'advanced' ? 'block' : 'none';
+  document.getElementById('public-fields').style.display = profile === 'local' ? 'none' : 'block';
+  const chosen = catalog.find(item => item.id === profile);
+  document.getElementById('mode-note').textContent = chosen ? chosen.description : '';
+  document.getElementById('save').disabled = false;
+  preflight();
+}
+
+function renderProfiles(items) {
+  catalog = items;
+  document.getElementById('profiles').innerHTML = items.map(item =>
+    '<article class="profile" data-id="' + item.id + '" onclick="selectProfile(this.dataset.id)">' +
+    '<h3>' + item.name + '</h3><p>' + item.description + '</p><small>适合：' + item.recommended_for + '</small></article>'
+  ).join('');
+}
+
+function renderReport(report) {
+  const network = report.mcp_network_security || {};
+  const lines = [
+    '当前模式：' + report.profile,
+    '配置文件：' + (report.config_path || '未识别'),
+    '已保存 transport：' + report.saved.transport,
+    '当前生效 transport：' + report.effective.transport,
+    '已保存 MCP 鉴权：' + (report.saved.mcp_require_auth ? '开启' : '关闭'),
+    '当前生效 MCP 鉴权：' + (report.effective.mcp_require_auth ? '开启' : '关闭'),
+    '已保存鉴权模式：' + report.saved.mcp_auth_mode,
+    '当前生效鉴权模式：' + report.effective.mcp_auth_mode,
+    '已保存公网地址：' + (report.saved.public_url || '未设置'),
+    '当前生效公网地址：' + (report.effective.public_url || '未设置'),
+    '进程监听地址：' + (report.effective.bind_host || '未识别'),
+    '容器宿主边界：' + (report.effective.external_bind_address || (network.in_docker ? '未声明' : '不适用')),
+    'MCP 网络门禁：' + (network.guard_active ? '已强制开启鉴权' : (network.override_active ? '已显式豁免（高风险）' : '正常')),
+    '记忆目录：' + report.effective.buckets_dir,
+    '持久性：' + ((report.persistence || {}).persistent ? '已确认' : '需要处理'),
+  ];
+  if (report.overrides.length) lines.push('平台覆盖：' + report.overrides.map(item => item.env + ' → ' + item.field).join('，'));
+  document.getElementById('runtime-report').textContent = lines.join('\n');
+}
+
+async function preflight() {
+  if (!selectedProfile) return;
+  const response = await fetch('/api/onboarding/preflight', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({profile:selectedProfile,options:optionsForSelection()})});
+  const data = await readJsonSafe(response);
+  const result = document.getElementById('result');
+  result.style.display = 'block';
+  result.classList.toggle('bad', !data.ok);
+  const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+  result.textContent = data.ok
+    ? (warnings.length ? '检查通过，但存在高风险豁免：' + warnings.join('；') : '检查通过：保存后重启即可生效。')
+    : (data.issues || [data.error]).join('；');
+  document.getElementById('save').disabled = !data.ok;
+}
+
+async function saveProfile() {
+  const button = document.getElementById('save');
+  button.disabled = true;
+  try {
+    const response = await fetch('/api/onboarding/apply', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({profile:selectedProfile,options:optionsForSelection(),confirm:true})});
+    const data = await readJsonSafe(response);
+    if (!response.ok || !data.ok) throw new Error(data.error || (data.issues || []).join('；'));
+    renderReport(data.report);
+    const result = document.getElementById('result');
+    result.style.display = 'block'; result.classList.remove('bad');
+    const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+    result.textContent = data.message
+      + (data.report.overrides.length ? ' 注意：平台环境变量仍会覆盖部分设置。' : '')
+      + (warnings.length ? ' 高风险豁免：' + warnings.join('；') : '');
+    button.textContent = '已保存';
+  } catch (error) {
+    const result = document.getElementById('result');
+    result.style.display = 'block'; result.classList.add('bad'); result.textContent = error.message;
+    button.disabled = false;
+  }
+}
+
+async function boot() {
+  try {
+    const auth = await fetch('/auth/status', { cache: 'no-store' });
+    const authData = await readJsonSafe(auth);
+    if (!authData.authenticated) { location.href = '/'; return; }
+    const response = await fetch('/api/onboarding/profile');
+    const data = await readJsonSafe(response);
+    if (!response.ok || !data.ok) throw new Error(data.error || '读取失败');
+    renderProfiles(data.profiles); renderReport(data.report);
+    if (data.report.profile !== 'unconfigured') selectProfile(data.report.profile);
+  } catch (error) {
+    document.getElementById('runtime-report').textContent = '加载失败：' + error.message;
+  }
+}
+document.getElementById('public-url').addEventListener('input', preflight);
+document.getElementById('transport').addEventListener('change', preflight);
+document.getElementById('advanced-auth').addEventListener('change', preflight);
+boot();
+</script>
+</body>
+</html>

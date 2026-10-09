@@ -1,0 +1,185 @@
+{
+  "decision_gates": {
+    "must_stop_and_ask": [
+      {
+        "trigger": "philosophical_boundary",
+        "description": "无法判断某个决定是否符合项目哲学时",
+        "rule": "停下来提出问题，等对齐后再继续，不能用假设代替沟通"
+      },
+      {
+        "trigger": "philosophy_undocumented",
+        "description": "发现项目没有明确记录哲学边界时",
+        "rule": "主动提醒合作者，说明当前发现的哲学，确认后写入该项目的rule.md，不能在哲学模糊的情况下继续推进"
+      },
+      {
+        "trigger": "structural_change",
+        "description": "涉及新建文件、新建模块、改变现有文件职责边界时",
+        "rule": "先提出来确认位置和职责，不能自己猜"
+      },
+      {
+        "trigger": "confirmation_required",
+        "description": "每次改动完成后必须在当前对话里明确告知",
+        "required_fields": [
+          "文件夹路径",
+          "具体文件名",
+          "改动的起止行号",
+          "代码层面改了什么（代码语言描述）",
+          "自然语言层面改了什么（人话描述）",
+          "为什么这样改"
+        ],
+        "rule": "不能只说已完成，六项必须全部在对话里出现"
+      }
+    ],
+    "before_any_work": [
+      {
+        "rule": "改动前声明依赖",
+        "description": "本次改动用到的所有环境变量和路径必须在开始时写明"
+      },
+      {
+        "rule": "环境变量名称以统一清单为唯一真源",
+        "description": "新增或修改环境变量前必须先更新 docs/ENVIRONMENT_VARIABLES.md；禁止静默改名或删除旧变量。确需更名时必须保留兼容映射、弃用提示、迁移说明和回归测试，正式名称与旧名并存时正式名称优先。",
+        "anti_pattern": "代码重构时把 OMBRE_API_KEY 改成 OMBRE_COMPRESS_API_KEY，却不保留旧名，导致存量部署升级后密钥静默失效",
+        "doc_map": {
+          "变量名称/含义唯一真源": "docs/ENVIRONMENT_VARIABLES.md",
+          "本地/测试 Docker 部署的具体取值": ".env.example（复制为 .env，deploy/docker-compose.yml 读取）",
+          "面向普通用户的一键部署（Docker Hub 镜像）": "deploy/docker-compose.user.yml",
+          "裸机/源码部署（不用 Docker）": "config.example.yaml（复制为 config.yaml）",
+          "多所有者部署": "deploy/owners.example.yaml + docs/MULTI_OWNER.md + deploy/docker-compose.multi.yml",
+          "Render 平台部署": "render.yaml",
+          "可靠性/诊断相关行为说明（非变量名清单）": "docs/OPERATIONS.md"
+        }
+      }
+    ],
+    "can_proceed_autonomously": "工程实现细节，不涉及上述触发点时"
+  },
+
+  "execution": {
+    "workflow": [
+      "按需求文档逐条实现，完成一条标记一条，不跳步",
+      "不自行扩展需求范围，范围变化必须经过对齐",
+      "临时脚本和调试工具用完立即删除，不提交"
+    ],
+    "cross_round_artifacts": {
+      "rule": "跨轮次中间产物必须落实到文件中",
+      "what_counts": [
+        "审计清单（超过5条的）",
+        "本轮决策结果",
+        "待办/未完成项",
+        "需要下一轮继续的任何内容"
+      ],
+      "where": "项目根目录，文件名格式：tmp_<日期>_<简短描述>.md，例如：tmp_0502_audit_taskC.md",
+      "when_to_delete": "本轮任务全部完成、内容已同步进rule.md或其他正式文档后删除",
+      "sync": "内容最终结论必须同步进rule.md对应章节，tmp文件只是过渡，不是存档",
+      "anti_pattern": "重要清单只写在对话里，compact后找不到，下一轮要从transcript恢复"
+    },
+    "testing": {
+      "fast_check": {
+        "command": "pytest tests/ -x --tb=short -q",
+        "when": "每次改动后必跑",
+        "purpose": "确认逻辑层没有破坏"
+      },
+      "full_check": {
+        "command": "docker compose build --no-cache && docker compose up -d",
+        "when": "功能实现完成后必跑，不能只跑 fast_check 就算完",
+        "purpose": "单测全绿也可能藏着只有真实部署才暴露的问题",
+        "incident": "2025 年一次改动单测 596 全过，但真机构建才发现 .dockerignore 把 deploy/ 整个排除，导致 COPY deploy/fetch_cloudflared.py 构建失败——每个 Docker 用户都会构建失败，这类 bug 单测永远抓不到",
+        "manual_verification": [
+          "按 README 的部署路径从零走一遍，不能复用旧容器/旧镜像蒙混过关",
+          "打开 Dashboard 确认页面正常展示",
+          "逐个调用改动涉及的工具；需要全量覆盖时以 src/server.py 的公开 MCP 清单为准（当前 16 个），看返回和日志是否符合预期",
+          "需要模型 Key（LLM 压缩/向量化）才能测的工具，直接向用户要，不要跳过不测"
+        ]
+      }
+    },
+    "versioning": {
+      "files": ["VERSION（根目录）", "src/VERSION"],
+      "rule": "改代码必须同时 bump 这两个文件，保持数值一致，禁止只改一处",
+      "why": "运行时 get_version() 优先读 src/VERSION（热更新只刷新 src/，根目录 VERSION 常是历史遗留旧值）；两处不同步会导致显示版本号和实际代码不一致，甚至倒退（真实事故：有用户从 2.3.8 更新后版本号显示成 2.1.3）",
+      "format": "三段号 X.Y.Z（主版本.次版本.修订号），例如 2.8.3",
+      "bump_rule": {
+        "改 bug": "只加最后一位（修订号）+1",
+        "加新功能": "加中间一位（次版本号）+1，最后一位归零",
+        "第一位（主版本号）": "永远不动"
+      }
+    },
+    "git_workflow": {
+      "pull_before_work": {
+        "rule": "改任何代码之前，先从 main 分支拉取远端最新代码",
+        "command": "git pull origin main --ff-only（本地有未提交改动时先处理/暂存，不能用 --ff-only 失败就改成强制覆盖）",
+        "why": "在过期的本地代码基础上改动，容易改到已经被别人修过的地方，push 时冲突或悄悄覆盖别人的修复"
+      },
+      "push_requires_explicit_request": {
+        "rule": "任何时候用户没有明确说「push」，就不 push",
+        "scope": "包括 git push、创建/更新远程分支、触发部署流水线等一切会影响远程仓库的操作"
+      },
+      "branch_policy": {
+        "default_target": "testing 分支",
+        "rule": "改动默认先 push 到 testing 分支，经项目主负责人检查通过后，才能 push/合并到 main 分支",
+        "who_is_lead": "默认情况下，把这份文档贴给你看的这个人不是主负责人；主负责人身份需向用户当面确认，不能假设对话里的人就是主负责人",
+        "anti_pattern": "收到「改完了」或测试通过就直接 push 到 main，跳过 testing 分支和主负责人审核"
+      }
+    },
+    "reporting": {
+      "rule": "测试全绿后才汇报完成，未绿不汇报",
+      "format": {
+        "completed": "列出完成项",
+        "pending": "列出待确认项"
+      }
+    }
+  },
+
+  "data_safety": {
+    "vault_isolation": {
+      "rule": "手动测试/full_check 一律指向测试用的 vault（如 test_buckets/、专门建的 docker 测试卷），禁止指向根目录 buckets/ 或用户任何真实记忆库",
+      "why": "buckets/ 是用户真实记忆的原文——对话、承诺、情绪痕迹；rule.md 规定任何人都无权物理清除真实记忆，测试或清库操作一旦误指向它，后果不可逆",
+      "how": "需要真实环境验证时，问用户要一个专门的测试实例（例如独立配置的 vault 路径），不要为图方便临时把配置指向生产目录",
+      "anti_pattern": "为了'重置测试环境'方便，对 buckets/ 或任何不确定是不是测试卷的目录执行删除/清空操作"
+    },
+    "no_secrets_in_output": {
+      "rule": "config.yaml、.env、docs/secrets/ 下的真实 API Key、Dashboard 密码、OAuth/Tunnel token，不写进对话回复、commit message、代码注释或任何要提交/发出去的内容",
+      "how": "需要说明配置项时用变量名和占位示例值，不贴真实值"
+    }
+  },
+
+  "communication": {
+    "always_chinese": {
+      "rule": "任何时候都用中文，无一例外——包括对话回复、思考/推理过程、临时笔记、提交信息正文、代码注释、给自己的备注。",
+      "scope": ["对话回复", "思考与推理过程（thinking）", "tmp 过渡文件", "代码注释", "commit message 正文"],
+      "exception": "仅技术原文保留英文：标识符/函数名、API 字段、命令行、报错原文、错误码（如 OB-W005）。其余一律中文。",
+      "why": "合作者用中文协作；连思考过程也要中文，避免在推理里切换语言导致理解和表达漂移。"
+    },
+    "format": {
+      "preferred": "分点陈述",
+      "avoided": ["表格", "过度格式化"],
+      "language": "简洁自然语言，能一句话说清楚的不用两句"
+    },
+    "reporting": {
+      "completed": "列出完成项",
+      "pending": "列出待确认项，用问句提出"
+    }
+  },
+
+  "traceability": {
+    "in_conversation": {
+      "rule": "每次改动必须在当前对话里明确告知",
+      "required_fields": [
+        "文件夹路径",
+        "具体文件名",
+        "改动的起止行号",
+        "代码层面改了什么",
+        "自然语言层面改了什么",
+        "为什么这样改"
+      ]
+    },
+    "anti_pattern": "只说已完成，不说在哪里、为什么"
+  },
+
+  "philosophy": {
+    "alignment_first": {
+      "rule": "提示词是对齐的产物，不是起点",
+      "description": "在提示词出现之前，必须有一个对齐的过程：说想法，一起想清楚，共识之后再落笔。跳过对齐直接写提示词，是在假装已经想好了"
+    }
+  },
+
+  "philosophy_boundaries_source": "完整的哲学边界清单见根目录 rule.md，唯一真源；本文档不重复维护，避免出现两份不同步的版本。"
+}
